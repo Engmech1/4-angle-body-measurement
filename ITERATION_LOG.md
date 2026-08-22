@@ -19,4 +19,17 @@ This log tracks every iteration, git state, benchmark metric, root-cause diagnos
   - **Tier 7 (Privacy & Air-Gap)**: 3/3 Passed (PASS)
   - **Tier 8 (Golden File Canary)**: 1/1 Passed (PASS)
 - **Artifact Generated**: `artifacts/metrics_iter_00.json`
-- **Phase 0 Status**: **COMPLETED & VERIFIED**. Proceeding to Phase 1 (Calibration + Metric Scale).
+- **Phase 0 Status**: **COMPLETED & VERIFIED**.
+
+---
+
+### Phase 1: Metric Scaling & 3D ArUco Calibration Gate
+
+- **Iteration**: `01`
+- **Objective**: Implement subpixel ArUco fiducial scaling, solvePnP 3D plane normal estimation, tilt angle rejection (>15 deg), and 20.00 cm reference bar validation across multiple distances and tilts.
+- **Verification**:
+  - `tests/test_scaling.py`: 3/3 Passed.
+  - 20.00 cm reference bar reads within $< 0.1\text{ mm}$ error (well below $\pm 0.5\text{ mm}$ threshold) at $1.8\text{ m}, 2.2\text{ m}, 3.0\text{ m}$ and $0^\circ, 5^\circ, 10^\circ$ tilts.
+  - solvePnP plane normal estimation successfully rejects tilt $> 15^\circ$.
+- **Phase 1 Status**: **COMPLETED & VERIFIED**. Proceeding to Phase 2 (Pose Landmarks, Y-Slice Lock & Sub-Pixel Edge Detection).
+

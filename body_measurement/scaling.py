@@ -1,16 +1,20 @@
 """
-ArUco Metric Scaling Module with Enterprise Error Handling & Resilience.
+ArUco Metric Scaling & 3D Plane Pose Estimation Module.
 
-Uses OpenCV ArUco marker detection with sub-pixel corner refinement to compute
-an exact Pixels-per-Metric (PPM) ratio (pixels per cm) for camera calibration.
-Includes occlusion handling, frame corruption checks, logging, and depth offset correction.
+Implements high-precision metric scaling (Pixels-per-Centimeter) with:
+1. Sub-pixel ArUco fiducial corner refinement (cv2.cornerSubPix).
+2. solvePnP 3D planar normal estimation and tilt angle evaluation.
+3. Strict tilt rejection (rejects frames where marker normal deviates > 15 deg from optical axis).
+4. Subject-plane perspective depth ratio correction: PPM_subject = PPM_wall * (Z_wall / Z_subject).
 """
 
 from dataclasses import dataclass
 import logging
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import cv2
 import numpy as np
+
+from calibrate_camera import CameraCalibrator
 
 logger = logging.getLogger(__name__)
 
@@ -20,23 +24,20 @@ class CalibrationResult:
     """Represents the metric calibration result from ArUco detection."""
     pixels_per_cm: float
     marker_id: int
-    corners: np.ndarray  # Shape: (4, 2) sub-pixel corners
+    corners: np.ndarray             # Shape: (4, 2) sub-pixel corners
     reprojection_error: float
     is_valid: bool
     scale_confidence: float
     depth_correction_factor: float
+    tilt_angle_deg: float = 0.0
+    rvec: Optional[np.ndarray] = None
+    tvec: Optional[np.ndarray] = None
     error_message: Optional[str] = None
 
 
 class ArucoMetricScaler:
     """
-    Computes precise metric scaling (Pixels-Per-Centimeter) from ArUco fiducial markers.
-
-    Features:
-    - Sub-pixel corner localization using cv2.cornerSubPix
-    - Geometric perimeter-based and dual-diagonal cross-check for high accuracy
-    - Distance-ratio scaling correction: PPM_subject = PPM_wall * (Z_wall / Z_subject)
-    - Graceful fallback and error handling when marker is occluded or corrupted
+    High-precision ArUco metric scaler with 3D pose verification and tilt gating.
     """
 
     def __init__(
@@ -45,12 +46,13 @@ class ArucoMetricScaler:
         dictionary_id: int = cv2.aruco.DICT_4X4_50,
         subpix_win_size: int = 5,
         fallback_pixels_per_cm: Optional[float] = None,
+        camera_intrinsics: Optional[Dict[str, Any]] = None,
     ):
         self.marker_size_cm = float(marker_size_cm)
         self.dictionary_id = dictionary_id
         self.subpix_win_size = subpix_win_size
         self.fallback_pixels_per_cm = fallback_pixels_per_cm
-        self._last_valid_calibration: Optional[CalibrationResult] = None
+        self.intrinsics = camera_intrinsics or CameraCalibrator.load_intrinsics()
 
         try:
             self.dictionary = cv2.aruco.getPredefinedDictionary(dictionary_id)
@@ -58,7 +60,7 @@ class ArucoMetricScaler:
             self.detector_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
             self.detector_params.cornerRefinementWinSize = subpix_win_size
             self.detector_params.cornerRefinementMaxIterations = 40
-            self.detector_params.cornerRefinementMinAccuracy = 0.01
+            self.detector_params.cornerRefinementMinAccuracy = 0.005
 
             if hasattr(cv2.aruco, "ArucoDetector"):
                 self._detector = cv2.aruco.ArucoDetector(self.dictionary, self.detector_params)
@@ -74,158 +76,138 @@ class ArucoMetricScaler:
         target_marker_id: Optional[int] = None,
         distance_camera_to_wall_cm: Optional[float] = None,
         distance_camera_to_subject_cm: Optional[float] = None,
+        max_allowed_tilt_deg: float = 15.0,
     ) -> CalibrationResult:
         """
-        Detects the ArUco marker in the input image and calculates the metric scale.
-        Safely handles None, corrupted arrays, occlusions, and out-of-frame markers.
+        Detects the ArUco marker, refines corners, estimates 3D tilt pose, and computes PPM.
         """
-        # Calculate depth factor if distances provided
-        depth_factor = 1.0
-        if (
-            distance_camera_to_wall_cm is not None
-            and distance_camera_to_subject_cm is not None
-            and distance_camera_to_subject_cm > 0
-        ):
-            depth_factor = float(distance_camera_to_wall_cm / distance_camera_to_subject_cm)
-
-        # 1. Input Validation & Frame Corruption Guard
         if image is None or not isinstance(image, np.ndarray) or image.size == 0:
-            logger.warning("Empty or corrupted image provided to ArucoMetricScaler.")
-            return self._handle_detection_failure("Input image is None or empty.", depth_factor)
+            return CalibrationResult(
+                0.0, -1, np.empty((0, 2)), 999.0, False, 0.0, 1.0, error_message="Empty or invalid image."
+            )
 
+        # Apply lens undistortion if intrinsics are available
+        if self.intrinsics:
+            image = CameraCalibrator.undistort(image, self.intrinsics)
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+        h, w = gray.shape[:2]
+
+        # Detect markers
         try:
-            # 2. Convert to Grayscale
-            if len(image.shape) == 3 and image.shape[2] == 3:
-                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            elif len(image.shape) == 2:
-                gray = image
-            else:
-                return self._handle_detection_failure(f"Unsupported image shape: {image.shape}", depth_factor)
-
-            # 3. Marker Detection
             if self._detector is not None:
-                corners_list, ids, rejected = self._detector.detectMarkers(gray)
+                corners_list, ids, _ = self._detector.detectMarkers(gray)
             else:
-                corners_list, ids, rejected = cv2.aruco.detectMarkers(
-                    gray, self.dictionary, parameters=self.detector_params
-                )
-
-            if ids is None or len(ids) == 0:
-                logger.info("ArUco marker not detected in image (occlusion or out of frame).")
-                return self._handle_detection_failure("Marker not detected in frame.", depth_factor)
-
-            # 4. Find Target Marker
-            selected_idx = 0
-            if target_marker_id is not None:
-                found = False
-                for i, mid in enumerate(ids.flatten()):
-                    if mid == target_marker_id:
-                        selected_idx = i
-                        found = True
-                        break
-                if not found:
-                    return self._handle_detection_failure(
-                        f"Target marker ID {target_marker_id} not found among detected IDs {ids.flatten()}.",
-                        depth_factor,
-                    )
-
-            raw_corners = corners_list[selected_idx][0].astype(np.float32)  # Shape (4, 2)
-            marker_id = int(ids.flatten()[selected_idx])
-
-            # 5. Sub-Pixel Corner Refinement
-            criteria = (
-                cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
-                100,
-                0.001,
-            )
-            try:
-                refined_corners = cv2.cornerSubPix(
-                    gray,
-                    raw_corners,
-                    winSize=(self.subpix_win_size, self.subpix_win_size),
-                    zeroZone=(-1, -1),
-                    criteria=criteria,
-                )
-            except Exception as e:
-                logger.warning(f"Sub-pixel corner refinement failed: {e}. Using raw corners.")
-                refined_corners = raw_corners
-
-            # 6. Geometric Quality & Orthogonality Cross-Check
-            edge_lengths = []
-            for i in range(4):
-                p1 = refined_corners[i]
-                p2 = refined_corners[(i + 1) % 4]
-                edge_len = float(np.linalg.norm(p2 - p1))
-                edge_lengths.append(edge_len)
-
-            mean_edge_pixels = float(np.mean(edge_lengths))
-            edge_std = float(np.std(edge_lengths))
-
-            d1 = float(np.linalg.norm(refined_corners[2] - refined_corners[0]))
-            d2 = float(np.linalg.norm(refined_corners[3] - refined_corners[1]))
-            diag_ratio = min(d1, d2) / max(d1, d2) if max(d1, d2) > 0 else 0.0
-
-            scale_confidence = max(
-                0.0, min(1.0, 1.0 - (edge_std / (mean_edge_pixels + 1e-6)) * 2.0)
-            ) * (diag_ratio ** 2)
-
-            raw_ppm = mean_edge_pixels / self.marker_size_cm
-            effective_ppm = raw_ppm * depth_factor
-
-            result = CalibrationResult(
-                pixels_per_cm=effective_ppm,
-                marker_id=marker_id,
-                corners=refined_corners,
-                reprojection_error=edge_std,
-                is_valid=bool(effective_ppm > 0.1 and scale_confidence > 0.4),
-                scale_confidence=scale_confidence,
-                depth_correction_factor=depth_factor,
-                error_message=None,
-            )
-
-            if result.is_valid:
-                self._last_valid_calibration = result
-
-            return result
-
-        except Exception as ex:
-            logger.error(f"Unexpected error during ArUco calibration: {ex}", exc_info=True)
-            return self._handle_detection_failure(f"Internal calibration exception: {ex}", depth_factor)
-
-    def _handle_detection_failure(self, reason: str, depth_factor: float = 1.0) -> CalibrationResult:
-        """Provides graceful fallback if previous valid calibration exists."""
-        if self._last_valid_calibration is not None:
-            logger.info("Using previous valid calibration as fallback.")
+                corners_list, ids, _ = cv2.aruco.detectMarkers(gray, self.dictionary, parameters=self.detector_params)
+        except Exception as e:
             return CalibrationResult(
-                pixels_per_cm=self._last_valid_calibration.pixels_per_cm,
-                marker_id=self._last_valid_calibration.marker_id,
-                corners=self._last_valid_calibration.corners,
-                reprojection_error=self._last_valid_calibration.reprojection_error,
-                is_valid=True,
-                scale_confidence=self._last_valid_calibration.scale_confidence * 0.9,
-                depth_correction_factor=depth_factor,
-                error_message=f"Fallback used: {reason}",
+                0.0, -1, np.empty((0, 2)), 999.0, False, 0.0, 1.0, error_message=f"ArUco detection error: {e}"
             )
-        elif self.fallback_pixels_per_cm is not None and self.fallback_pixels_per_cm > 0:
-            logger.info("Using default fallback PPM value.")
+
+        if ids is None or len(ids) == 0:
             return CalibrationResult(
-                pixels_per_cm=self.fallback_pixels_per_cm * depth_factor,
-                marker_id=-1,
-                corners=np.empty((0, 2)),
-                reprojection_error=0.0,
-                is_valid=True,
-                scale_confidence=0.5,
-                depth_correction_factor=depth_factor,
-                error_message=f"Default fallback used: {reason}",
+                0.0, -1, np.empty((0, 2)), 999.0, False, 0.0, 1.0, error_message="No ArUco marker detected."
             )
+
+        # Select target marker
+        flat_ids = ids.flatten()
+        idx = 0
+        if target_marker_id is not None:
+            matches = np.where(flat_ids == target_marker_id)[0]
+            if len(matches) == 0:
+                return CalibrationResult(
+                    0.0, -1, np.empty((0, 2)), 999.0, False, 0.0, 1.0,
+                    error_message=f"Target marker ID {target_marker_id} not found.",
+                )
+            idx = matches[0]
+
+        chosen_id = int(flat_ids[idx])
+        raw_corners = corners_list[idx][0]  # Shape: (4, 2)
+
+        # Sub-pixel corner refinement
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 40, 0.001)
+        refined_corners = cv2.cornerSubPix(
+            gray,
+            raw_corners.astype(np.float32),
+            (self.subpix_win_size, self.subpix_win_size),
+            (-1, -1),
+            criteria,
+        )
+
+        # 3D Object points for solvePnP
+        s = self.marker_size_cm
+        obj_pts = np.array([
+            [-s / 2.0, s / 2.0, 0.0],
+            [s / 2.0, s / 2.0, 0.0],
+            [s / 2.0, -s / 2.0, 0.0],
+            [-s / 2.0, -s / 2.0, 0.0],
+        ], dtype=np.float64)
+
+        # Camera matrix
+        if self.intrinsics:
+            cam_matrix = np.array(self.intrinsics["camera_matrix"], dtype=np.float64)
+            dist_coeffs = np.array(self.intrinsics["dist_coefficients"], dtype=np.float64)
         else:
-            return CalibrationResult(
-                pixels_per_cm=0.0,
-                marker_id=-1,
-                corners=np.empty((0, 2)),
-                reprojection_error=0.0,
-                is_valid=False,
-                scale_confidence=0.0,
-                depth_correction_factor=depth_factor,
-                error_message=reason,
-            )
+            focal = 1400.0 * (w / 1920.0)
+            cam_matrix = np.array([[focal, 0.0, w / 2.0], [0.0, focal, h / 2.0], [0.0, 0.0, 1.0]], dtype=np.float64)
+            dist_coeffs = np.zeros(5, dtype=np.float64)
+
+        # Compute 3D pose and normal vector
+        success, rvec, tvec = cv2.solvePnP(obj_pts, refined_corners, cam_matrix, dist_coeffs)
+        tilt_deg = 0.0
+        if success:
+            R, _ = cv2.Rodrigues(rvec)
+            normal = R @ np.array([0.0, 0.0, 1.0])
+            # Angle between normal and camera Z axis [0, 0, 1]
+            cos_tilt = np.clip(np.abs(normal[2]), -1.0, 1.0)
+            tilt_deg = float(np.degrees(np.arccos(cos_tilt)))
+
+            if tilt_deg > max_allowed_tilt_deg:
+                return CalibrationResult(
+                    pixels_per_cm=0.0,
+                    marker_id=chosen_id,
+                    corners=refined_corners,
+                    reprojection_error=999.0,
+                    is_valid=False,
+                    scale_confidence=0.0,
+                    depth_correction_factor=1.0,
+                    tilt_angle_deg=tilt_deg,
+                    rvec=rvec,
+                    tvec=tvec,
+                    error_message=f"ArUco plane tilt ({tilt_deg:.1f} deg) exceeds max allowed {max_allowed_tilt_deg:.1f} deg.",
+                )
+
+        # Compute edge lengths
+        e0 = np.linalg.norm(refined_corners[1] - refined_corners[0])
+        e1 = np.linalg.norm(refined_corners[2] - refined_corners[1])
+        e2 = np.linalg.norm(refined_corners[3] - refined_corners[2])
+        e3 = np.linalg.norm(refined_corners[0] - refined_corners[3])
+        mean_edge_px = float((e0 + e1 + e2 + e3) / 4.0)
+
+        # Dual-diagonal cross check
+        d1 = np.linalg.norm(refined_corners[2] - refined_corners[0])
+        d2 = np.linalg.norm(refined_corners[3] - refined_corners[1])
+        diag_ratio = abs(d1 - d2) / max(d1, d2)
+
+        raw_ppm = mean_edge_px / self.marker_size_cm
+
+        # Depth ratio correction
+        depth_correction = 1.0
+        if distance_camera_to_wall_cm and distance_camera_to_subject_cm:
+            depth_correction = float(distance_camera_to_wall_cm / max(1.0, distance_camera_to_subject_cm))
+
+        final_ppm = raw_ppm * depth_correction
+        confidence = float(np.clip(1.0 - (diag_ratio * 4.0), 0.1, 1.0))
+
+        return CalibrationResult(
+            pixels_per_cm=final_ppm,
+            marker_id=chosen_id,
+            corners=refined_corners,
+            reprojection_error=float(diag_ratio * mean_edge_px),
+            is_valid=True,
+            scale_confidence=confidence,
+            depth_correction_factor=depth_correction,
+            tilt_angle_deg=tilt_deg,
+            rvec=rvec if success else None,
+            tvec=tvec if success else None,
+        )
