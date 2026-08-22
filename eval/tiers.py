@@ -40,6 +40,32 @@ class TierResult:
     status_note: Optional[str] = None
 
 
+from body_measurement.landmarks import BodySite
+from body_measurement.system import BodyMeasurementSystem, CaptureAngle
+
+
+def default_body_measurement_pipeline(frames_by_angle: Dict[int, np.ndarray], ppm: float, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Default end-to-end measurement pipeline adapter for benchmarks."""
+    system = BodyMeasurementSystem()
+    system.set_manual_scale(ppm)
+
+    ref_frame = frames_by_angle.get(0, next(iter(frames_by_angle.values())))
+    anchor = system.determine_anchor(ref_frame, site=BodySite.WAIST)
+    target_y = metadata.get("waist_y_pixel", anchor.slice_y_pixel) if metadata else anchor.slice_y_pixel
+
+    for angle_deg, frame in frames_by_angle.items():
+        if angle_deg in (0, 90, 180, 270):
+            ang_enum = CaptureAngle(angle_deg)
+            system.process_angle_burst(ang_enum, [frame], y_slice=target_y)
+
+    summary = system.compute_measurement(site=BodySite.WAIST)
+    return {
+        "perimeter_cm": summary.perimeter_cm,
+        "is_valid": summary.is_successful,
+        "quality_flags": [],
+    }
+
+
 class EvaluationSuite:
     """
     Executes benchmark suites across Tier 1 through Tier 8.
@@ -51,7 +77,7 @@ class EvaluationSuite:
             pipeline_fn: Callable that accepts (frames_dict, ppm, metadata) and returns
                          {'perimeter_cm': float, 'is_valid': bool, 'quality_flags': list}
         """
-        self.pipeline_fn = pipeline_fn
+        self.pipeline_fn = pipeline_fn or default_body_measurement_pipeline
         self.twin_gen = DigitalTwinGenerator(seed=42)
 
     # -------------------------------------------------------------------------

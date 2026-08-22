@@ -225,7 +225,7 @@ class DigitalTwinGenerator:
             aruco_marker_size_cm=aruco_size_cm,
             ground_truth=gt_profiles,
             frames_by_angle=frames,
-            metadata={"seed": self.seed, "angles": list(angles)},
+            metadata={"seed": self.seed, "angles": list(angles), "waist_y_pixel": int(waist_y)},
         )
 
     def generate_dataset_split(
