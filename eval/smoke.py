@@ -171,15 +171,14 @@ def compute_ground_truth_measurements(mesh) -> dict:
         lines = mesh.section(plane_origin=[0, y_plane, 0], plane_normal=[0, 1, 0])
 
         if lines is not None:
+            # Extract 2D planar path for exact ordered perimeter
+            slice_2d, _ = lines.to_planar()
+            perimeter_raw = float(slice_2d.length * 100.0)
+
             # Extract 2D vertices on cross-section plane in cm
-            # Use vertices directly on X, Z axes (since normal is Y)
             pts_cm = lines.vertices[:, [0, 2]] * 100.0  # Convert to cm
 
-            # 1. Raw anatomical contour perimeter
-            diffs = np.diff(pts_cm, axis=0, append=pts_cm[:1])
-            perimeter_raw = float(np.sum(np.sqrt(np.sum(diffs ** 2, axis=1))))
-
-            # 2. Convex Hull perimeter (taut physical tape measure ground truth)
+            # Convex Hull perimeter (taut physical tape measure ground truth)
             hull = ConvexHull(pts_cm)
             hull_pts = pts_cm[hull.vertices]
             hull_diffs = np.diff(hull_pts, axis=0, append=hull_pts[:1])

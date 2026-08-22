@@ -1,0 +1,131 @@
+{
+  "iteration": "02",
+  "timestamp": "2026-08-22T19:41:30Z",
+  "suites": {
+    "Tier 1 (Analytic Math)": {
+      "num_tests": 8,
+      "num_passed": 8,
+      "mae_cm": 0.0,
+      "bias_cm": 0.0,
+      "p95_cm": 0.0,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.0846,
+      "is_passed": true,
+      "status_note": null,
+      "details": {
+        "circle_err_cm": 3.696235779671042e-05,
+        "ellipse_err_cm": 4.0042561764153106e-05,
+        "hull_ge_raw": true
+      }
+    },
+    "Tier 2 (Digital Twin - DEV)": {
+      "num_tests": 5,
+      "num_passed": 0,
+      "mae_cm": 0.7149,
+      "bias_cm": 0.7149,
+      "p95_cm": 0.9405,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 1.1392,
+      "is_passed": false,
+      "status_note": null,
+      "details": {}
+    },
+    "Tier 2 (Digital Twin - HOLDOUT)": {
+      "num_tests": 5,
+      "num_passed": 0,
+      "mae_cm": 0.9598,
+      "bias_cm": 0.9598,
+      "p95_cm": 1.1499,
+      "silent_failure_rate": 0.2,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.6109,
+      "is_passed": false,
+      "status_note": null,
+      "details": {}
+    },
+    "Tier 3 (Metamorphic Invariance)": {
+      "num_tests": 8,
+      "num_passed": 8,
+      "mae_cm": 0.0,
+      "bias_cm": 0.0,
+      "p95_cm": 0.0,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.1936,
+      "is_passed": true,
+      "status_note": null,
+      "details": {}
+    },
+    "Tier 4 (Adversarial Robustness)": {
+      "num_tests": 5,
+      "num_passed": 5,
+      "mae_cm": 0.0,
+      "bias_cm": 0.0,
+      "p95_cm": 0.0,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.0,
+      "is_passed": true,
+      "status_note": null,
+      "details": {}
+    },
+    "Tier 5 (Physical Proxies)": {
+      "num_tests": 4,
+      "num_passed": 4,
+      "mae_cm": 0.1163,
+      "bias_cm": 0.1163,
+      "p95_cm": 0.3954,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.0108,
+      "is_passed": true,
+      "status_note": null,
+      "details": {}
+    },
+    "Tier 6 (Human Test-Retest)": {
+      "num_tests": 0,
+      "num_passed": 0,
+      "mae_cm": 0.0,
+      "bias_cm": 0.0,
+      "p95_cm": 0.0,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.0,
+      "is_passed": true,
+      "status_note": "NOT_RUN (No live human subject rig attached - not simulated per \u00a75)",
+      "details": {}
+    },
+    "Tier 7 (Privacy & Air-Gap)": {
+      "num_tests": 3,
+      "num_passed": 3,
+      "mae_cm": 0.0,
+      "bias_cm": 0.0,
+      "p95_cm": 0.0,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.0908,
+      "is_passed": true,
+      "status_note": null,
+      "details": {}
+    },
+    "Tier 8 (Golden File Canary)": {
+      "num_tests": 1,
+      "num_passed": 1,
+      "mae_cm": 0.0,
+      "bias_cm": 0.0,
+      "p95_cm": 0.0,
+      "silent_failure_rate": 0.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.0032,
+      "is_passed": true,
+      "status_note": null,
+      "details": {
+        "canary_hash": "2b1d2f1e7cd0a7eddc221cd501fe9f59c167ec006fc54e34f3cc9a2abb56aa2b",
+        "perimeter_hull_cm": 81.95412063330497
+      }
+    }
+  },
+  "all_passed": false
+}

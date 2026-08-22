@@ -92,10 +92,11 @@ class CrossSectionReconstructor:
             )
 
         aspect_ratio = (2.0 * a_target) / d_target
+        mean_r = (a_target + (d_target / 2.0)) / 2.0
         p = (
             custom_superellipse_p
             if custom_superellipse_p is not None
-            else self._estimate_adaptive_power(aspect_ratio)
+            else self._estimate_adaptive_power(aspect_ratio, mean_semi_axis_cm=mean_r)
         )
 
         lordosis_depth = (
@@ -204,10 +205,15 @@ class CrossSectionReconstructor:
                 0.0, 0.0, 0.0, 2.0 * a_target, d_target, 0.0, aspect_ratio, p, 0.0, method, np.empty((0, 2)), False
             )
 
-    def _estimate_adaptive_power(self, aspect_ratio: float) -> float:
-        """Adapts superellipse exponent based on coronal/sagittal aspect ratio."""
+    def _estimate_adaptive_power(self, aspect_ratio: float, mean_semi_axis_cm: float = 12.0) -> float:
+        """Adapts superellipse exponent based on coronal/sagittal aspect ratio and girth scale."""
+        base_p = float(self.superellipse_power)
         if aspect_ratio > 1.6:
-            return 2.55
+            base_p = 2.55
         elif aspect_ratio < 1.2:
-            return 2.20
-        return float(self.superellipse_power)
+            base_p = 2.20
+
+        if mean_semi_axis_cm > 14.0:
+            base_p -= 0.05
+
+        return float(base_p)

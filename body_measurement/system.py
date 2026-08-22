@@ -9,7 +9,7 @@ Orchestrates:
 5. Zero-Raw-Media Privacy (Local in-memory execution, frames deleted immediately)
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum
 import logging
 from typing import Dict, Iterable, List, Optional
@@ -53,6 +53,7 @@ class BodyMeasurementSummary:
     privacy_verified_zero_disk: bool
     is_successful: bool
     status_message: str
+    quality_flags: List[str] = field(default_factory=list)
 
 
 class BodyMeasurementSystem:
@@ -74,7 +75,7 @@ class BodyMeasurementSystem:
         marker_size_cm: float = 15.0,
         gaussian_sigma: float = 1.8,
         mad_threshold: float = 2.5,
-        reconstruction_method: ReconstructionMethod = ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE,
+        reconstruction_method: ReconstructionMethod = ReconstructionMethod.DEFORMABLE_SUPERELLIPSE,
     ):
         self.scaler = ArucoMetricScaler(marker_size_cm=marker_size_cm)
         self.anchor_engine = AnatomicalAnchorEngine()
@@ -184,6 +185,7 @@ class BodyMeasurementSystem:
                 privacy_verified_zero_disk=True,
                 is_successful=False,
                 status_message="Missing required angle bursts (Front 0° and Profile 90° required).",
+                quality_flags=["QUALITY_ERR_MISSING_ANGLES"],
             )
 
         w_0 = self._burst_data[int(CaptureAngle.FRONT)].width_cm
@@ -205,19 +207,60 @@ class BodyMeasurementSystem:
         lordosis_val = custom_lordosis_cm if custom_lordosis_cm is not None else (d_mean * prior["lordosis_ratio"])
         p_val = custom_p if custom_p is not None else prior["superellipse_p"]
 
+        chosen_method = method or self.reconstructor.default_method
         recon_res = self.reconstructor.reconstruct_cross_section(
             width_front_cm=w_0,
             depth_right_cm=d_90,
             width_back_cm=w_180,
             depth_left_cm=d_270,
-            method=method,
+            method=chosen_method,
             custom_lordosis_depth_cm=lordosis_val,
             custom_superellipse_p=p_val,
         )
 
+        # Quality Gating & Sanity Checks
+        quality_flags = []
+        is_valid = recon_res.is_valid
+
+        # 1. Front / Back symmetry check
+        coronal_asymmetry = abs(w_0 - w_180)
+        if coronal_asymmetry > 8.0:
+            quality_flags.append("QUALITY_WARN_CORONAL_ASYMMETRY")
+            is_valid = False
+
+        # 2. Left / Right profile depth symmetry check
+        sagittal_asymmetry = abs(d_90 - d_270)
+        if sagittal_asymmetry > 6.0:
+            quality_flags.append("QUALITY_WARN_SAGITTAL_ASYMMETRY")
+            is_valid = False
+
+        # 3. Plausible human girth bounds
+        p_val_meas = recon_res.perimeter_hull_cm
+        if not (40.0 <= p_val_meas <= 250.0):
+            quality_flags.append("QUALITY_ERR_GIRTH_OUT_OF_BOUNDS")
+            is_valid = False
+
+        if not (15.0 <= recon_res.coronal_width_cm <= 90.0):
+            quality_flags.append("QUALITY_ERR_WIDTH_OUT_OF_BOUNDS")
+            is_valid = False
+
+        if not (10.0 <= recon_res.sagittal_depth_cm <= 70.0):
+            quality_flags.append("QUALITY_ERR_DEPTH_OUT_OF_BOUNDS")
+            is_valid = False
+
+        if not (0.60 <= recon_res.aspect_ratio <= 2.50):
+            quality_flags.append("QUALITY_ERR_ASPECT_RATIO_ANOMALY")
+            is_valid = False
+
+        status_msg = (
+            "Successfully computed perimeter with sub-pixel reconstruction."
+            if is_valid
+            else f"Measurement refused due to quality gate violation: {', '.join(quality_flags)}"
+        )
+
         return BodyMeasurementSummary(
             site=site,
-            perimeter_cm=recon_res.perimeter_cm,
+            perimeter_cm=recon_res.perimeter_hull_cm,
             coronal_width_cm=recon_res.coronal_width_cm,
             sagittal_depth_cm=recon_res.sagittal_depth_cm,
             aspect_ratio=recon_res.aspect_ratio,
@@ -228,6 +271,7 @@ class BodyMeasurementSystem:
             cross_section_contour=recon_res.contour_points_cm,
             reconstruction_method=recon_res.method_used,
             privacy_verified_zero_disk=True,
-            is_successful=recon_res.is_valid,
-            status_message="Successfully computed perimeter with sub-pixel and non-elliptical spline reconstruction.",
+            is_successful=is_valid,
+            status_message=status_msg,
+            quality_flags=quality_flags,
         )

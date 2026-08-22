@@ -61,8 +61,8 @@ def default_body_measurement_pipeline(frames_by_angle: Dict[int, np.ndarray], pp
     summary = system.compute_measurement(site=BodySite.WAIST)
     return {
         "perimeter_cm": summary.perimeter_cm,
-        "is_valid": summary.is_successful,
-        "quality_flags": [],
+        "is_valid": summary.is_successful and (len(summary.quality_flags) == 0),
+        "quality_flags": summary.quality_flags,
     }
 
 
