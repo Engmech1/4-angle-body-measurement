@@ -1,17 +1,23 @@
 """
 Unit & Integration Test Suite for Body Measurement System.
 Tests sub-pixel edge localization, ArUco metric scaling, landmark anchoring,
-burst MAD filtering, and spline perimeter reconstruction accuracy.
+burst MAD filtering, spline perimeter reconstruction, and ML continual learning.
 """
 
+import os
+import tempfile
 import cv2
 import numpy as np
 import pytest
 
 from body_measurement.adversarial_simulator import AdversarialSimulationConfig, AdversarialSimulator
-from body_measurement.burst_processor import BurstFrameProcessor
+from body_measurement.burst_processor import BurstAngleResult, BurstFrameProcessor
 from body_measurement.edge_detection import SubPixelEdgeDetector
 from body_measurement.landmarks import AnatomicalAnchorEngine, BodySite
+from body_measurement.ml_optimizer import (
+    AdaptiveMLReconstructor,
+    BiomechanicalFeatureVector,
+)
 from body_measurement.reconstruction import (
     CrossSectionReconstructor,
     ReconstructionMethod,
@@ -151,6 +157,66 @@ class TestCrossSectionReconstructor:
 
         error_cm = abs(res.perimeter_cm - gt.exact_perimeter_cm)
         assert error_cm < 0.10, f"Expected error < 0.10 cm, got {error_cm:.4f} cm"
+
+
+class TestAdaptiveMLReconstructor:
+    def test_feature_extraction_and_prediction(self):
+        ml_opt = AdaptiveMLReconstructor()
+        
+        burst_data = {
+            0: BurstAngleResult(0, 30, 30, 400.0, 1.2, 32.0, 1.5, 0.98, True),
+            90: BurstAngleResult(90, 30, 30, 275.0, 1.1, 22.0, 1.8, 0.96, True),
+            180: BurstAngleResult(180, 30, 30, 400.0, 1.0, 32.0, 1.4, 0.97, True),
+            270: BurstAngleResult(270, 30, 30, 275.0, 1.3, 22.0, 1.6, 0.95, True),
+        }
+        
+        features = ml_opt.extract_features(burst_data, torso_height_px=750.0, pixels_per_cm=12.5)
+        assert features.coronal_width_front_cm == 32.0
+        assert features.sagittal_depth_right_cm == 22.0
+        assert abs(features.aspect_ratio - (32.0 / 22.0)) < 0.01
+        
+        # Test ML prediction
+        res = ml_opt.predict_and_optimize(features, site=BodySite.WAIST)
+        assert res.ml_corrected_perimeter_cm > 50.0
+        assert res.estimated_uncertainty_cm > 0.0
+        assert 2.25 <= res.adaptive_superellipse_p <= 2.65
+
+    def test_online_continual_learning_update(self):
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
+            temp_model_path = tf.name
+
+        try:
+            ml_opt = AdaptiveMLReconstructor(model_path=temp_model_path)
+            
+            features = BiomechanicalFeatureVector(
+                coronal_width_front_cm=32.0,
+                coronal_width_back_cm=32.0,
+                sagittal_depth_right_cm=22.0,
+                sagittal_depth_left_cm=22.0,
+                aspect_ratio=1.45,
+                width_asymmetry_cm=0.0,
+                depth_asymmetry_cm=0.0,
+                mean_sway_amplitude_cm=1.5,
+                max_sway_amplitude_cm=2.0,
+                mean_edge_confidence=0.96,
+                min_edge_confidence=0.92,
+                torso_height_proxy_cm=60.0,
+                base_perimeter_estimate_cm=87.0,
+            )
+            
+            # True tape measurement check: 88.00 cm
+            gt_tape = 88.00
+            err_before = abs(ml_opt.predict_and_optimize(features).ml_corrected_perimeter_cm - gt_tape)
+            
+            # Apply online learning update
+            ml_opt.online_update(features, ground_truth_perimeter_cm=gt_tape, learning_rate=0.20)
+            
+            err_after = abs(ml_opt.predict_and_optimize(features).ml_corrected_perimeter_cm - gt_tape)
+            assert err_after < err_before, "Online learning should reduce error toward ground truth."
+            assert os.path.exists(temp_model_path)
+        finally:
+            if os.path.exists(temp_model_path):
+                os.remove(temp_model_path)
 
 
 class TestFullAdversarialQA:
