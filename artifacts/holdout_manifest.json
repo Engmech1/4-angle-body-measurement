@@ -1,0 +1,228 @@
+{
+  "version": "1.0",
+  "description": "Frozen ANTIGRAVITY Holdout Dataset Manifest (\u00a74 Tier 2.5 Sweep)",
+  "content_hash_sha256": "09cdb9251de01ff89df8c86e1b48bc484ccd85eb70f50305d8c3709b480c690d",
+  "num_subjects": 5,
+  "subjects": [
+    {
+      "subject_id": "holdout_subject_01",
+      "height_cm": 162.0,
+      "distance_m": 1.85,
+      "camera_height_cm": 85.0,
+      "image_size": [
+        1920,
+        1080
+      ],
+      "pixels_per_cm": 5.6757,
+      "metadata": {
+        "seed": 42,
+        "angles": [
+          0,
+          90,
+          180,
+          270
+        ],
+        "waist_y_pixel": 481,
+        "camera_roll_deg": -1.8,
+        "marker_tilt_deg": 8.0,
+        "focal_mult": 0.75
+      },
+      "ground_truth": {
+        "waist": {
+          "perimeter_hull_cm": 71.2719,
+          "perimeter_raw_cm": 71.6609,
+          "coronal_width_cm": 26.0,
+          "sagittal_depth_cm": 17.5
+        },
+        "chest": {
+          "perimeter_hull_cm": 82.3281,
+          "perimeter_raw_cm": 82.3719,
+          "coronal_width_cm": 30.0,
+          "sagittal_depth_cm": 20.0
+        },
+        "hips": {
+          "perimeter_hull_cm": 90.7057,
+          "perimeter_raw_cm": 90.8463,
+          "coronal_width_cm": 32.5,
+          "sagittal_depth_cm": 22.5
+        }
+      }
+    },
+    {
+      "subject_id": "holdout_subject_02",
+      "height_cm": 170.0,
+      "distance_m": 2.3,
+      "camera_height_cm": 100.0,
+      "image_size": [
+        3840,
+        2160
+      ],
+      "pixels_per_cm": 12.1739,
+      "metadata": {
+        "seed": 42,
+        "angles": [
+          0,
+          90,
+          180,
+          270
+        ],
+        "waist_y_pixel": 977,
+        "camera_roll_deg": 1.5,
+        "marker_tilt_deg": 12.0,
+        "focal_mult": 1.0
+      },
+      "ground_truth": {
+        "waist": {
+          "perimeter_hull_cm": 80.2051,
+          "perimeter_raw_cm": 80.6601,
+          "coronal_width_cm": 29.0,
+          "sagittal_depth_cm": 20.0
+        },
+        "chest": {
+          "perimeter_hull_cm": 92.0552,
+          "perimeter_raw_cm": 92.1078,
+          "coronal_width_cm": 33.0,
+          "sagittal_depth_cm": 23.0
+        },
+        "hips": {
+          "perimeter_hull_cm": 101.3449,
+          "perimeter_raw_cm": 101.508,
+          "coronal_width_cm": 36.0,
+          "sagittal_depth_cm": 25.5
+        }
+      }
+    },
+    {
+      "subject_id": "holdout_subject_03",
+      "height_cm": 180.0,
+      "distance_m": 2.75,
+      "camera_height_cm": 115.0,
+      "image_size": [
+        1920,
+        1080
+      ],
+      "pixels_per_cm": 7.6364,
+      "metadata": {
+        "seed": 42,
+        "angles": [
+          0,
+          90,
+          180,
+          270
+        ],
+        "waist_y_pixel": 488,
+        "camera_roll_deg": -0.8,
+        "marker_tilt_deg": 3.0,
+        "focal_mult": 1.5
+      },
+      "ground_truth": {
+        "waist": {
+          "perimeter_hull_cm": 92.3694,
+          "perimeter_raw_cm": 92.9204,
+          "coronal_width_cm": 33.0,
+          "sagittal_depth_cm": 23.5
+        },
+        "chest": {
+          "perimeter_hull_cm": 104.2864,
+          "perimeter_raw_cm": 104.3486,
+          "coronal_width_cm": 37.0,
+          "sagittal_depth_cm": 26.5
+        },
+        "hips": {
+          "perimeter_hull_cm": 109.4897,
+          "perimeter_raw_cm": 109.6734,
+          "coronal_width_cm": 38.5,
+          "sagittal_depth_cm": 28.0
+        }
+      }
+    },
+    {
+      "subject_id": "holdout_subject_04",
+      "height_cm": 186.0,
+      "distance_m": 3.15,
+      "camera_height_cm": 90.0,
+      "image_size": [
+        3840,
+        2160
+      ],
+      "pixels_per_cm": 8.8889,
+      "metadata": {
+        "seed": 42,
+        "angles": [
+          0,
+          90,
+          180,
+          270
+        ],
+        "waist_y_pixel": 984,
+        "camera_roll_deg": 1.9,
+        "marker_tilt_deg": 16.0,
+        "focal_mult": 1.0
+      },
+      "ground_truth": {
+        "waist": {
+          "perimeter_hull_cm": 113.2755,
+          "perimeter_raw_cm": 114.0564,
+          "coronal_width_cm": 39.0,
+          "sagittal_depth_cm": 30.5
+        },
+        "chest": {
+          "perimeter_hull_cm": 125.4134,
+          "perimeter_raw_cm": 125.4955,
+          "coronal_width_cm": 43.5,
+          "sagittal_depth_cm": 33.0
+        },
+        "hips": {
+          "perimeter_hull_cm": 128.1963,
+          "perimeter_raw_cm": 128.433,
+          "coronal_width_cm": 44.0,
+          "sagittal_depth_cm": 34.0
+        }
+      }
+    },
+    {
+      "subject_id": "holdout_subject_05",
+      "height_cm": 172.0,
+      "distance_m": 3.45,
+      "camera_height_cm": 110.0,
+      "image_size": [
+        1920,
+        1080
+      ],
+      "pixels_per_cm": 3.4493,
+      "metadata": {
+        "seed": 42,
+        "angles": [
+          0,
+          90,
+          180,
+          270
+        ],
+        "waist_y_pixel": 516,
+        "camera_roll_deg": -1.2,
+        "marker_tilt_deg": 19.0,
+        "focal_mult": 0.85
+      },
+      "ground_truth": {
+        "waist": {
+          "perimeter_hull_cm": 98.8285,
+          "perimeter_raw_cm": 99.4394,
+          "coronal_width_cm": 35.0,
+          "sagittal_depth_cm": 25.5
+        },
+        "chest": {
+          "perimeter_hull_cm": 109.9186,
+          "perimeter_raw_cm": 109.9878,
+          "coronal_width_cm": 38.5,
+          "sagittal_depth_cm": 28.5
+        },
+        "hips": {
+          "perimeter_hull_cm": 113.5134,
+          "perimeter_raw_cm": 113.7121,
+          "coronal_width_cm": 39.5,
+          "sagittal_depth_cm": 29.5
+        }
+      }
+    }
+  ]
+}
