@@ -228,13 +228,13 @@ class BodyMeasurementSystem:
 
         # 1. Front / Back symmetry check (detects asymmetric clothing drapes and yaw errors)
         coronal_asymmetry = abs(w_0 - w_180)
-        if coronal_asymmetry > 2.0:
+        if coronal_asymmetry > 1.20:
             quality_flags.append("QUALITY_WARN_CORONAL_ASYMMETRY")
             is_valid = False
 
         # 2. Left / Right profile depth symmetry check
         sagittal_asymmetry = abs(d_90 - d_270)
-        if sagittal_asymmetry > 2.0:
+        if sagittal_asymmetry > 1.20:
             quality_flags.append("QUALITY_WARN_SAGITTAL_ASYMMETRY")
             is_valid = False
 

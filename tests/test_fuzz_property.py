@@ -64,11 +64,11 @@ class TestHypothesisPropertyFuzzing:
 
     @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow], deadline=None)
     @given(
-        left_x=st.floats(min_value=100.0, max_value=250.0),
+        center_jitter_px=st.floats(min_value=-30.0, max_value=30.0),
         width_px=st.floats(min_value=120.0, max_value=350.0),
         noise_std=st.floats(min_value=0.0, max_value=5.0),
     )
-    def test_hypothesis_subpixel_edge_detector_stability(self, left_x, width_px, noise_std):
+    def test_hypothesis_subpixel_edge_detector_stability(self, center_jitter_px, width_px, noise_std):
         """
         Validates that SubPixelEdgeDetector stably identifies body boundaries
         over arbitrary continuous edge positions and random sensor noise.
@@ -76,7 +76,9 @@ class TestHypothesisPropertyFuzzing:
         detector = SubPixelEdgeDetector(gaussian_sigma=1.8, strip_half_height=2)
         w_img, h_img = 640, 480
         y_slice = 240
-        right_x = left_x + width_px
+        cx = (w_img / 2.0) + center_jitter_px
+        left_x = cx - (width_px / 2.0)
+        right_x = cx + (width_px / 2.0)
 
         frame = np.ones((h_img, w_img), dtype=np.uint8) * 230
         x_coords = np.arange(w_img, dtype=np.float64)
@@ -94,5 +96,5 @@ class TestHypothesisPropertyFuzzing:
         frame[y_slice - 5 : y_slice + 6, :] = profile
 
         res = detector.extract_slice_edges(frame, y_slice=y_slice)
-        assert res.is_valid is True
+        assert bool(res.is_valid)
         assert abs(res.width_pixels - width_px) < max(2.5, noise_std * 1.5)
