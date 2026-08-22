@@ -1,8 +1,9 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+title Exercise App - Master Menu Launcher
 
-:: Search for python executable
+:: Find Python Executable
 set "PY_EXE=C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe"
 
 if not exist "%PY_EXE%" (
@@ -17,6 +18,6 @@ if not exist "%PY_EXE%" (
 "%PY_EXE%" run_menu.py
 if %errorlevel% neq 0 (
     echo.
-    echo [ERROR] Application exited with error code %errorlevel%
+    echo [ERROR] Application exited with code %errorlevel%
     pause
 )
