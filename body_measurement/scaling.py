@@ -82,8 +82,16 @@ class ArucoMetricScaler:
         Detects the ArUco marker, refines corners, estimates 3D tilt pose, and computes PPM.
         """
         if image is None or not isinstance(image, np.ndarray) or image.size == 0:
+            depth_factor = 1.0
+            if (
+                distance_camera_to_wall_cm is not None
+                and distance_camera_to_subject_cm is not None
+                and distance_camera_to_subject_cm > 0
+            ):
+                depth_factor = float(distance_camera_to_wall_cm / distance_camera_to_subject_cm)
+            ppm = (self.fallback_pixels_per_cm or 0.0) * depth_factor
             return CalibrationResult(
-                0.0, -1, np.empty((0, 2)), 999.0, False, 0.0, 1.0, error_message="Empty or invalid image."
+                ppm, -1, np.empty((0, 2)), 999.0, False, 0.0, depth_factor, error_message="Empty or invalid image."
             )
 
         # Apply lens undistortion if intrinsics are available
@@ -105,8 +113,23 @@ class ArucoMetricScaler:
             )
 
         if ids is None or len(ids) == 0:
+            depth_factor = 1.0
+            if (
+                distance_camera_to_wall_cm is not None
+                and distance_camera_to_subject_cm is not None
+                and distance_camera_to_subject_cm > 0
+            ):
+                depth_factor = float(distance_camera_to_wall_cm / distance_camera_to_subject_cm)
+            ppm = (self.fallback_pixels_per_cm or 0.0) * depth_factor
             return CalibrationResult(
-                0.0, -1, np.empty((0, 2)), 999.0, False, 0.0, 1.0, error_message="No ArUco marker detected."
+                pixels_per_cm=ppm,
+                marker_id=-1,
+                corners=np.empty((0, 2)),
+                reprojection_error=999.0,
+                is_valid=False,
+                scale_confidence=0.0,
+                depth_correction_factor=depth_factor,
+                error_message="No ArUco marker detected.",
             )
 
         # Select target marker

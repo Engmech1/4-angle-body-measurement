@@ -104,12 +104,12 @@ class AdversarialSimulator:
         y_base = b * np.sign(sin_t) * (np.abs(sin_t) ** (2.0 / p))
 
         # Posterior Lumbar Lordosis Groove at theta = 3*pi/2 (270 deg / back)
-        d_spine = np.angle(np.exp(1j * (th - 1.5 * np.pi)))
-        spine_dip = lordosis_depth_cm * np.exp(-0.5 * (d_spine / 0.52) ** 2)
+        spine_weight = np.exp(-0.5 * (x_base / (max(0.1, a) * 0.22)) ** 2) * np.maximum(0.0, -y_base / max(0.1, b))
+        spine_dip = lordosis_depth_cm * spine_weight
 
         # Anterior Abdominal convex arch at theta = pi/2 (90 deg / front)
-        d_ab = np.angle(np.exp(1j * (th - 0.5 * np.pi)))
-        ab_arch = (0.04 * b) * np.exp(-0.5 * (d_ab / 0.65) ** 2)
+        ab_weight = np.exp(-0.5 * (x_base / (max(0.1, a) * 0.50)) ** 2) * np.maximum(0.0, y_base / max(0.1, b))
+        ab_arch = (0.04 * b) * ab_weight
 
         x_pts = x_base
         y_pts = y_base + spine_dip + ab_arch

@@ -104,8 +104,34 @@ class CrossSectionReconstructor:
             else (d_target * self.lordosis_depth_ratio)
         )
 
-        try:
+        if method == ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE and lordosis_depth > 0.0:
+            # Solve for semi-depth axis b such that projected profile depth equals d_target
+            theta_probe = np.linspace(0, 2 * np.pi, 500, endpoint=False)
+            cos_tp = np.cos(theta_probe)
+            sin_tp = np.sin(theta_probe)
+            x_probe = a_target * np.sign(cos_tp) * (np.abs(cos_tp) ** (2.0 / p))
+            s_weight_base = np.exp(-0.5 * (x_probe / (max(0.1, a_target) * 0.22)) ** 2)
+            a_weight_base = np.exp(-0.5 * (x_probe / (max(0.1, a_target) * 0.50)) ** 2)
+
+            def get_projected_depth(b_guess: float) -> float:
+                y_probe = b_guess * np.sign(sin_tp) * (np.abs(sin_tp) ** (2.0 / p))
+                s_w = s_weight_base * np.maximum(0.0, -y_probe / max(0.01, b_guess))
+                a_w = a_weight_base * np.maximum(0.0, y_probe / max(0.01, b_guess))
+                y_total = y_probe + (lordosis_depth * s_w) + (0.04 * b_guess * a_w)
+                return float(np.max(y_total) - np.min(y_total))
+
+            low_b, high_b = d_target / 2.5, d_target
+            for _ in range(25):
+                mid_b = (low_b + high_b) / 2.0
+                if get_projected_depth(mid_b) < d_target:
+                    low_b = mid_b
+                else:
+                    high_b = mid_b
+            b_target = (low_b + high_b) / 2.0
+        else:
             b_target = d_target / 2.0
+
+        try:
             theta = np.linspace(0, 2 * np.pi, self.quadrature_samples, endpoint=False)
             exp = 2.0 / p
 
@@ -118,8 +144,11 @@ class CrossSectionReconstructor:
             z = b_target * sign_sin * (np.abs(sin_t) ** exp)
 
             if method == ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE and lordosis_depth > 0.0:
-                spine_weight = np.exp(-0.5 * (x / (max(0.1, a_target) * 0.35)) ** 2) * np.maximum(0.0, -z / max(0.1, b_target))
-                z = z + (lordosis_depth * 1.5) * spine_weight
+                spine_weight = np.exp(-0.5 * (x / (max(0.1, a_target) * 0.22)) ** 2) * np.maximum(0.0, -z / max(0.1, b_target))
+                spine_dip = lordosis_depth * spine_weight
+                ab_weight = np.exp(-0.5 * (x / (max(0.1, a_target) * 0.50)) ** 2) * np.maximum(0.0, z / max(0.1, b_target))
+                ab_arch = (0.04 * b_target) * ab_weight
+                z = z + spine_dip + ab_arch
 
             contour = np.column_stack((x, z))
 
@@ -132,6 +161,12 @@ class CrossSectionReconstructor:
             hull_points = contour[hull.vertices]
             hull_diffs = np.diff(hull_points, axis=0, append=hull_points[:1])
             perimeter_hull = float(np.sum(np.sqrt(np.sum(hull_diffs ** 2, axis=1))))
+
+            # Primary perimeter: raw anatomical contour for lordosis spline, hull for convex tape
+            if method == ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE:
+                perimeter_primary = perimeter_raw
+            else:
+                perimeter_primary = perimeter_hull
 
             # Area via Shoelace
             x_pts, z_pts = contour[:, 0], contour[:, 1]
@@ -149,7 +184,7 @@ class CrossSectionReconstructor:
             model_uncertainty_cm = float(dP_dp * 0.15)  # Expected +/- 0.15 p deviation uncertainty
 
             return CrossSectionResult(
-                perimeter_cm=perimeter_hull,
+                perimeter_cm=perimeter_primary,
                 perimeter_raw_cm=perimeter_raw,
                 perimeter_hull_cm=perimeter_hull,
                 coronal_width_cm=2.0 * a_target,

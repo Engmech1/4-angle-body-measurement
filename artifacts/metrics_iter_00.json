@@ -1,6 +1,6 @@
 {
   "iteration": "00",
-  "timestamp": "2026-08-22T18:38:39Z",
+  "timestamp": "2026-08-22T19:30:54Z",
   "suites": {
     "Tier 1 (Analytic Math)": {
       "num_tests": 8,
@@ -10,7 +10,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.0621,
+      "runtime_seconds": 0.0815,
       "is_passed": true,
       "status_note": null,
       "details": {
@@ -22,12 +22,12 @@
     "Tier 2 (Digital Twin - DEV)": {
       "num_tests": 5,
       "num_passed": 0,
-      "mae_cm": 87.923,
-      "bias_cm": -87.923,
-      "p95_cm": 107.0642,
-      "silent_failure_rate": 0.0,
-      "refusal_rate": 1.0,
-      "runtime_seconds": 0.1493,
+      "mae_cm": 62.6807,
+      "bias_cm": 62.6807,
+      "p95_cm": 67.3607,
+      "silent_failure_rate": 1.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 1.0832,
       "is_passed": false,
       "status_note": null,
       "details": {}
@@ -35,12 +35,12 @@
     "Tier 2 (Digital Twin - HOLDOUT)": {
       "num_tests": 5,
       "num_passed": 0,
-      "mae_cm": 87.923,
-      "bias_cm": -87.923,
-      "p95_cm": 107.0642,
-      "silent_failure_rate": 0.0,
-      "refusal_rate": 1.0,
-      "runtime_seconds": 0.1689,
+      "mae_cm": 62.6807,
+      "bias_cm": 62.6807,
+      "p95_cm": 67.3607,
+      "silent_failure_rate": 1.0,
+      "refusal_rate": 0.0,
+      "runtime_seconds": 0.2398,
       "is_passed": false,
       "status_note": null,
       "details": {}
@@ -53,7 +53,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.1926,
+      "runtime_seconds": 0.2381,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -79,7 +79,7 @@
       "p95_cm": 0.3954,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.0147,
+      "runtime_seconds": 0.0093,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -105,7 +105,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.084,
+      "runtime_seconds": 0.0977,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -118,7 +118,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.0046,
+      "runtime_seconds": 0.0036,
       "is_passed": true,
       "status_note": null,
       "details": {
