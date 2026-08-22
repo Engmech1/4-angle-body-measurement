@@ -535,7 +535,7 @@ class CalibrationDashboardApp:
         cv2.ellipse(panel, (cx, cy), (int(a_ell), int(b_ell)), 0, 0, 360, (248, 113, 113), 1, cv2.LINE_AA)
 
         # 2. Reconstructed Lordosis Spline (Solid Green)
-        c_nodes = recon_res.contour_points
+        c_nodes = recon_res.contour_points_cm
         pts_contour = []
         for x_cm, y_cm in c_nodes:
             px = int(cx + x_cm * scale_plot)

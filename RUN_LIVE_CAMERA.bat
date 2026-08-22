@@ -26,7 +26,7 @@ if "%PYTHON_EXE%"=="" (
 
 cls
 echo ==============================================================================
-echo   STARTING LIVE COMPUTER WEBCAM CAPTURE + ML ENGINE...
+echo   STARTING LIVE COMPUTER WEBCAM CAPTURE AND ML ENGINE...
 echo ==============================================================================
 %PYTHON_EXE% live_camera_capture.py
 echo.

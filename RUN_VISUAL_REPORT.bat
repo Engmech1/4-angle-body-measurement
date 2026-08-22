@@ -26,7 +26,7 @@ if "%PYTHON_EXE%"=="" (
 
 cls
 echo ==============================================================================
-echo   GENERATING VISUAL DIAGNOSTIC REPORT...
+echo   STARTING VISUAL DIAGNOSTIC REPORT GENERATOR...
 echo ==============================================================================
 %PYTHON_EXE% visualize_pipeline.py
 if exist body_measurement_visual_report.png (

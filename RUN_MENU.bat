@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 > nul
 setlocal enabledelayedexpansion
-title Exercise App - 4-Angle Guided Capture & ML Body Measurement Engine
+title Exercise App - 4-Angle Guided Capture and ML Body Measurement Engine
 
 :: Find Python Executable
 set "PYTHON_EXE="
@@ -28,8 +28,8 @@ if "%PYTHON_EXE%"=="" (
 :MENU
 cls
 echo ==============================================================================
-echo       EXERCISE APP: 4-ANGLE GUIDED CAPTURE + ML MEASUREMENT SYSTEM
-echo                  High-Precision Computer Vision & ML Engine
+echo       EXERCISE APP: 4-ANGLE GUIDED CAPTURE AND ML MEASUREMENT SYSTEM
+echo                  High-Precision Computer Vision and ML Engine
 echo ==============================================================================
 echo  Python Path: %PYTHON_EXE%
 echo ==============================================================================
@@ -40,7 +40,7 @@ echo   [1] Run Multi-View Calibration Dashboard (calibration_dashboard.py)
 echo       - แสดงหน้าจอวิเคราะห์ 4 ช่องแบบ Real-time (ArUco, Skeleton, Oscilloscope, Cross-Section)
 echo       - รองรับทั้งกล้องเว็บแคมคอมพิวเตอร์ และกล้องมือถือผ่าน IP Camera / DroidCam
 echo.
-echo   [2] Run Live Computer Webcam Capture + ML Engine (live_camera_capture.py)
+echo   [2] Run Live Computer Webcam Capture and ML Engine (live_camera_capture.py)
 echo       - ถ่ายวัดสรีระ 4 มุมอัตโนมัติ พร้อมระบบ Online ML Active Learning
 echo.
 echo   [3] Run Interactive Guided Capture Demo (demo_capture.py)
@@ -49,13 +49,13 @@ echo.
 echo   [4] Run Adversarial QA Benchmark (run_simulation.py)
 echo       - ทดสอบความแม่นยำ Error ^< 0.5 cm บน 6 สรีระมนุษย์ พร้อม Sway และ Noise
 echo.
-echo   [5] Generate Visual Diagnostic Report & Plots (visualize_pipeline.py)
+echo   [5] Generate Visual Diagnostic Report and Plots (visualize_pipeline.py)
 echo       - สร้างรูปภาพกราฟวิเคราะห์ 4 มิติ (Cross-Section, DoG Profile, Sway, Error)
 echo.
 echo   [6] Train / Retrain ML Continual Learning Model (train_ml_model.py)
 echo       - ฝึกโมเดล ML เรียนรู้ข้อผิดพลาดทางสรีระและชดเชยมิติอัตโนมัติ
 echo.
-echo   [7] Run Pytest Unit & Integration Tests (pytest -v)
+echo   [7] Run Pytest Unit and Integration Tests (pytest -v)
 echo       - ตรวจสอบความถูกต้องของทุกโมดูล (Sub-Pixel, Scaling, MAD, Spline, ML, SMPL)
 echo.
 echo   [8] View README.md Documentation
@@ -83,7 +83,7 @@ goto MENU
 :DASHBOARD
 cls
 echo ==============================================================================
-echo   STARTING MULTI-VIEW CALIBRATION DASHBOARD & WORKBENCH...
+echo   STARTING MULTI-VIEW CALIBRATION DASHBOARD AND WORKBENCH...
 echo ==============================================================================
 %PYTHON_EXE% calibration_dashboard.py
 echo.
@@ -94,7 +94,7 @@ goto MENU
 :CAMERA
 cls
 echo ==============================================================================
-echo   STARTING LIVE COMPUTER WEBCAM CAPTURE + ML ENGINE...
+echo   STARTING LIVE COMPUTER WEBCAM CAPTURE AND ML ENGINE...
 echo ==============================================================================
 %PYTHON_EXE% live_camera_capture.py
 echo.

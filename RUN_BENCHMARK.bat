@@ -26,7 +26,7 @@ if "%PYTHON_EXE%"=="" (
 
 cls
 echo ==============================================================================
-echo   RUNNING ADVERSARIAL QA BENCHMARK (6 SOMATOTYPES)...
+echo   STARTING ADVERSARIAL QA BENCHMARK (6 SOMATOTYPES)...
 echo ==============================================================================
 %PYTHON_EXE% run_simulation.py
 echo.

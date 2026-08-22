@@ -26,7 +26,7 @@ if "%PYTHON_EXE%"=="" (
 
 cls
 echo ==============================================================================
-echo   STARTING MULTI-VIEW CALIBRATION DASHBOARD & DIAGNOSTIC WORKBENCH...
+echo   STARTING MULTI-VIEW CALIBRATION DASHBOARD AND DIAGNOSTIC WORKBENCH...
 echo ==============================================================================
 %PYTHON_EXE% calibration_dashboard.py
 echo.
