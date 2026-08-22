@@ -33,17 +33,22 @@ class SubPixelEdgeDetector:
         self,
         gaussian_sigma: float = 1.8,
         strip_half_height: int = 2,
-        min_gradient_threshold: float = 8.0,
+        min_gradient_threshold: float = 10.0,
+        psf_boundary_bias_px: float = 0.0,
     ):
         """
+        Initializes the sub-pixel edge detector.
+
         Args:
             gaussian_sigma: Scale parameter for Derivative of Gaussian (DoG) filter.
             strip_half_height: Number of adjacent scanlines (y +/- k) to average for noise reduction.
             min_gradient_threshold: Minimum gradient magnitude to consider a valid body edge.
+            psf_boundary_bias_px: Point spread function boundary offset compensation in pixels.
         """
         self.gaussian_sigma = gaussian_sigma
         self.strip_half_height = strip_half_height
         self.min_gradient_threshold = min_gradient_threshold
+        self.psf_boundary_bias_px = float(psf_boundary_bias_px)
 
         # Precompute 1D Derivative of Gaussian (DoG) and 2nd Derivative (D2oG) kernels
         kernel_radius = int(np.ceil(3.5 * gaussian_sigma))
@@ -142,7 +147,8 @@ class SubPixelEdgeDetector:
         # Refine Right Edge to Sub-Pixel accuracy
         sub_right_x = self._subpixel_parabolic_peak(grad_mag, right_peak_idx, d2_1d)
 
-        width_pixels = sub_right_x - sub_left_x
+        raw_width_px = sub_right_x - sub_left_x
+        width_pixels = max(0.0, raw_width_px - self.psf_boundary_bias_px)
         center_x = (sub_left_x + sub_right_x) / 2.0
 
         # Confidence metric based on edge sharpness and signal-to-noise ratio

@@ -63,7 +63,7 @@ class BodyMeasurementSystem:
 
     # Anatomical cross-section morphological shape priors per site
     SITE_MORPHOLOGY_PRIORS = {
-        BodySite.WAIST: {"lordosis_ratio": 0.140, "superellipse_p": 2.45},
+        BodySite.WAIST: {"lordosis_ratio": 0.120, "superellipse_p": 2.45},
         BodySite.CHEST: {"lordosis_ratio": 0.055, "superellipse_p": 2.50},
         BodySite.HIPS: {"lordosis_ratio": 0.075, "superellipse_p": 2.55},
         BodySite.THIGH: {"lordosis_ratio": 0.000, "superellipse_p": 2.15},
@@ -75,11 +75,15 @@ class BodyMeasurementSystem:
         marker_size_cm: float = 15.0,
         gaussian_sigma: float = 1.8,
         mad_threshold: float = 2.5,
-        reconstruction_method: ReconstructionMethod = ReconstructionMethod.DEFORMABLE_SUPERELLIPSE,
+        psf_boundary_bias_px: float = 0.65,
+        reconstruction_method: ReconstructionMethod = ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE,
     ):
         self.scaler = ArucoMetricScaler(marker_size_cm=marker_size_cm)
         self.anchor_engine = AnatomicalAnchorEngine()
-        self.edge_detector = SubPixelEdgeDetector(gaussian_sigma=gaussian_sigma)
+        self.edge_detector = SubPixelEdgeDetector(
+            gaussian_sigma=gaussian_sigma,
+            psf_boundary_bias_px=psf_boundary_bias_px,
+        )
         self.burst_processor = BurstFrameProcessor(
             edge_detector=self.edge_detector,
             mad_threshold=mad_threshold,
