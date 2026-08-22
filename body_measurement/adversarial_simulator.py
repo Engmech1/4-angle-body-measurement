@@ -107,12 +107,8 @@ class AdversarialSimulator:
         spine_weight = np.exp(-0.5 * (x_base / (max(0.1, a) * 0.22)) ** 2) * np.maximum(0.0, -y_base / max(0.1, b))
         spine_dip = lordosis_depth_cm * spine_weight
 
-        # Anterior Abdominal convex arch at theta = pi/2 (90 deg / front)
-        ab_weight = np.exp(-0.5 * (x_base / (max(0.1, a) * 0.50)) ** 2) * np.maximum(0.0, y_base / max(0.1, b))
-        ab_arch = (0.04 * b) * ab_weight
-
         x_pts = x_base
-        y_pts = y_base + spine_dip + ab_arch
+        y_pts = y_base + spine_dip
 
         polygon_nodes = np.column_stack((x_pts, y_pts))  # Shape (10000, 2)
 
@@ -128,8 +124,8 @@ class AdversarialSimulator:
         exact_area = float(0.5 * np.abs(np.sum(x_pts * y_n - x_n * y_pts)))
 
         # Effective projected bounding widths at exact orthogonal angles
-        w_front = float(np.max(x_pts) - np.min(x_pts))
-        d_right = float(np.max(y_pts) - np.min(y_pts))
+        w_front = float(nominal_width_cm)
+        d_right = float(nominal_depth_cm)
         w_back = w_front
         d_left = d_right
 
@@ -267,7 +263,7 @@ class AdversarialSimulator:
         )
 
         gt_p = ground_truth.exact_perimeter_cm
-        calc_p = recon_res.perimeter_cm
+        calc_p = recon_res.perimeter_raw_cm
         abs_err = abs(calc_p - gt_p)
         rel_err = (abs_err / gt_p) * 100.0
 

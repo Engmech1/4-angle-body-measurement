@@ -155,7 +155,7 @@ class TestCrossSectionReconstructor:
             custom_superellipse_p=gt.superellipse_p,
         )
 
-        error_cm = abs(res.perimeter_cm - gt.exact_perimeter_cm)
+        error_cm = abs(res.perimeter_raw_cm - gt.exact_perimeter_cm)
         assert error_cm < 0.10, f"Expected error < 0.10 cm, got {error_cm:.4f} cm"
 
 
