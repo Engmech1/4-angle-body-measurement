@@ -17,7 +17,7 @@ import logging
 import os
 from typing import Dict, List, Optional, Tuple
 import numpy as np
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
 
@@ -106,14 +106,12 @@ class AdaptiveMLReconstructor:
         )
 
         self._scaler = StandardScaler()
-        # Non-linear gradient boosted regressors for high-precision morphology prediction
         self._residual_model = GradientBoostingRegressor(
             n_estimators=80, max_depth=3, learning_rate=0.08, random_state=42
         )
         self._p_model = GradientBoostingRegressor(
             n_estimators=80, max_depth=3, learning_rate=0.08, random_state=42
         )
-        # Online linear corrector for incremental user calibration updates
         self._online_bias_corrector = Ridge(alpha=1.0)
         self._is_trained = False
 
@@ -124,6 +122,15 @@ class AdaptiveMLReconstructor:
 
     def _init_baseline_model(self) -> None:
         """Initializes baseline regression models with diverse synthetic profiles."""
+        self._scaler = StandardScaler()
+        self._residual_model = GradientBoostingRegressor(
+            n_estimators=80, max_depth=3, learning_rate=0.08, random_state=42
+        )
+        self._p_model = GradientBoostingRegressor(
+            n_estimators=80, max_depth=3, learning_rate=0.08, random_state=42
+        )
+        self._online_bias_corrector = Ridge(alpha=1.0)
+
         X_init = np.array([
             [32.0, 32.0, 22.0, 22.0, 1.45, 0.0, 0.0, 1.5, 2.0, 0.95, 0.90, 60.0, 87.08],
             [28.0, 28.0, 19.5, 19.5, 1.44, 0.0, 0.0, 1.2, 1.8, 0.98, 0.92, 58.0, 76.05],
@@ -138,9 +145,7 @@ class AdaptiveMLReconstructor:
         y_residuals = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float64)
         y_p = np.array([2.45, 2.40, 2.55, 2.35, 2.40, 2.50, 2.46, 2.38], dtype=np.float64)
 
-        self._scaler.fit(X_init)
-        X_scaled = self._scaler.transform(X_init)
-
+        X_scaled = self._scaler.fit_transform(X_init)
         self._residual_model.fit(X_scaled, y_residuals)
         self._p_model.fit(X_scaled, y_p)
         self._online_bias_corrector.fit(X_scaled, y_residuals)
@@ -211,7 +216,6 @@ class AdaptiveMLReconstructor:
 
         # 2. Predict Residual Bias Correction (cm)
         residual_bias = float(self._residual_model.predict(x_scaled)[0])
-        # Add online personalized corrector bias
         online_bias = float(self._online_bias_corrector.predict(x_scaled)[0])
         total_bias = float(np.clip(residual_bias + online_bias, -1.5, 1.5))
 
@@ -264,7 +268,6 @@ class AdaptiveMLReconstructor:
         x_vec = features.to_array().reshape(1, -1)
         x_scaled = self._scaler.transform(x_vec)
 
-        # Update online bias corrector weights
         self._online_bias_corrector.coef_ += learning_rate * error * x_scaled.flatten()
         self._online_bias_corrector.intercept_ += learning_rate * error
 
@@ -289,10 +292,16 @@ class AdaptiveMLReconstructor:
         try:
             with open(path, "r") as f:
                 data = json.load(f)
-            self._scaler.mean_ = np.array(data["scaler_mean"], dtype=np.float64)
-            self._scaler.scale_ = np.array(data["scaler_scale"], dtype=np.float64)
-            self._online_bias_corrector.coef_ = np.array(data["online_coef"], dtype=np.float64)
-            self._online_bias_corrector.intercept_ = float(data["online_intercept"])
+            
+            # Re-init fresh baseline
+            self._init_baseline_model()
+            
+            if "scaler_mean" in data and "scaler_scale" in data:
+                self._scaler.mean_ = np.array(data["scaler_mean"], dtype=np.float64)
+                self._scaler.scale_ = np.array(data["scaler_scale"], dtype=np.float64)
+            if "online_coef" in data and "online_intercept" in data:
+                self._online_bias_corrector.coef_ = np.array(data["online_coef"], dtype=np.float64)
+                self._online_bias_corrector.intercept_ = float(data["online_intercept"])
             self._is_trained = True
             logger.info(f"Loaded ML weights from {path}")
         except Exception as e:
