@@ -41,23 +41,23 @@ class BenchmarkRunner:
         """Runs the requested evaluation suites."""
         results: List[TierResult] = []
 
-        if suite_name in ("all", "tier1"):
+        if suite_name in ("all", "dev", "tier1"):
             results.append(self.suite.run_tier1_analytic())
-        if suite_name in ("all", "tier2_dev"):
+        if suite_name in ("all", "dev", "tier2_dev"):
             results.append(self.suite.run_tier2_digital_twin(split="dev"))
         if suite_name in ("all", "tier2_holdout"):
             results.append(self.suite.run_tier2_digital_twin(split="holdout"))
-        if suite_name in ("all", "tier3"):
+        if suite_name in ("all", "dev", "tier3"):
             results.append(self.suite.run_tier3_metamorphic())
-        if suite_name in ("all", "tier4"):
+        if suite_name in ("all", "dev", "tier4"):
             results.append(self.suite.run_tier4_adversarial())
-        if suite_name in ("all", "tier5"):
+        if suite_name in ("all", "dev", "tier5"):
             results.append(self.suite.run_tier5_physical_proxies())
-        if suite_name in ("all", "tier6"):
+        if suite_name in ("all", "dev", "tier6"):
             results.append(self.suite.run_tier6_human_retest())
-        if suite_name in ("all", "tier7"):
+        if suite_name in ("all", "dev", "tier7"):
             results.append(self.suite.run_tier7_privacy_airgap())
-        if suite_name in ("all", "tier8"):
+        if suite_name in ("all", "dev", "tier8"):
             results.append(self.suite.run_tier8_golden_file())
 
         metrics_payload = {
@@ -110,7 +110,7 @@ class BenchmarkRunner:
 
 def main():
     parser = argparse.ArgumentParser(description="ANTIGRAVITY Benchmark Suite Runner")
-    parser.add_argument("--suite", default="all", choices=["all", "tier1", "tier2_dev", "tier2_holdout", "tier3", "tier4", "tier5", "tier6", "tier7", "tier8"])
+    parser.add_argument("--suite", default="all", choices=["all", "dev", "tier1", "tier2_dev", "tier2_holdout", "tier3", "tier4", "tier5", "tier6", "tier7", "tier8"])
     parser.add_argument("--iter", default="00", help="Iteration index (e.g. 00, 01)")
     args = parser.parse_args()
 
