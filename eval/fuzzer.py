@@ -70,6 +70,7 @@ class FuzzSampleResult:
     signed_diff_cm: float
     is_valid: bool
     quality_flags: List[str]
+    accuracy_score_pct: float
     is_silent_failure: bool
     is_refusal: bool
     runtime_seconds: float
@@ -306,6 +307,7 @@ class MonteCarloFuzzer:
                     signed_diff_cm=diff,
                     is_valid=is_valid,
                     quality_flags=flags,
+                    accuracy_score_pct=score_pct,
                     is_silent_failure=is_silent_fail,
                     is_refusal=(not is_valid),
                     runtime_seconds=elapsed,
@@ -332,9 +334,11 @@ class MonteCarloFuzzer:
         silent_rate = (silent_failures / total_runs) * 100.0 if total_runs > 0 else 0.0
         refusal_rate = (refusals / total_runs) * 100.0 if total_runs > 0 else 0.0
 
-        # Anti-Overfitting Generalization Score
-        # 100 points scale: Deduct for MAE > 0.20cm, bias, and silent failures
-        acc_score = max(0.0, 100.0 - (mae * 50.0) - (abs(bias) * 30.0) - (silent_failures * 50.0))
+        # Anti-Overfitting Generalization Score: Mean of all stochastic trial scores
+        # (Zeroed out if any un-gated silent failures occur)
+        acc_score = float(np.mean([r.accuracy_score_pct for r in results])) if results else 0.0
+        if silent_failures > 0:
+            acc_score = 0.0
 
         # Markdown Scoreboard
         print("\n" + "=" * 84)

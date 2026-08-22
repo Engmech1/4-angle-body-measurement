@@ -21,7 +21,7 @@ class TestPhase3BurstProcessing:
 
     @pytest.fixture
     def burst_processor(self):
-        detector = SubPixelEdgeDetector(gaussian_sigma=1.8)
+        detector = SubPixelEdgeDetector(gaussian_sigma=1.8, psf_boundary_bias_px=0.0)
         return BurstFrameProcessor(edge_detector=detector, mad_threshold=2.5)
 
     def test_injected_sway_and_rotation_changes_width_under_1mm(self, burst_processor):

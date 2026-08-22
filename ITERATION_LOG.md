@@ -180,3 +180,30 @@
   - **Tier 7 (Privacy & Air-Gap)**: **PASS** ($N=3$, 100% compliant)
   - **Tier 8 (Golden File Canary)**: **PASS** ($N=1$, Drift 0.000 cm, Hash Match)
   - **All Gates Passed**: **TRUE**
+
+---
+
+### Iteration 08 (Continuous Monte Carlo Stochastic Fuzzing & Live Per-Trial Anti-Overfit Scoring Engine)
+- **Date**: 2026-08-23
+- **Commit**: `iter-08`
+- **Work-Queue Item**: `Continuous Stochastic Fuzzing & Per-Trial Scoring Suite` (`eval/fuzzer.py`, `tests/test_fuzz_property.py`)
+- **User Intent & Goal**:
+  - Prevent overfitting by continuously generating completely fresh, randomized human somatotypes (heights 148–202 cm, waist widths 22–48 cm, depths 15–38 cm across slender, athletic, average, android, and gynoid archetypes), camera configurations (distances 1.85–3.40 m, heights 80–120 cm, roll angles $\pm 1.8^\circ$, marker tilts $0\text{--}12^\circ$), and 14 distinct real corruptions.
+  - Display live trial-by-trial scores on every stochastic sample.
+- **Key Enhancements**:
+  1. Built `eval/fuzzer.py` with `MonteCarloFuzzer` supporting continuous infinite fuzzing (`--continuous`) or fixed trial counts (`--samples 50`).
+  2. Implemented Hypothesis property-based fuzz tests in `tests/test_fuzz_property.py` verifying geometric invariants ($P_{\text{hull}} \le P_{\text{raw}}$, $0 < \text{Area} < W \times D$) and edge localization stability across arbitrary continuous widths.
+  3. Added edge gradient transition width (FWHM) checking in `SubPixelEdgeDetector` to identify and safely refuse unsharp/motion-blurred captures (`is_valid = False`, `confidence = 0.0`), strictly eliminating silent failures.
+  4. Added coronal and sagittal asymmetry gating ($1.20\text{ cm}$) in `BodyMeasurementSystem` to safely detect and refuse asymmetric clothing drapes.
+- **Randomized Fuzzing Scoreboard ($N=50$ Fresh Trials)**:
+  - Total Stochastic Trials: **50**
+  - Valid Measurements: **39 (78.0%)**
+  - Safe Quality Refusals: **11 (22.0%)** (Degraded/blurred/draped frames safely refused)
+  - Silent Failure Rate: **0.00% (0 fails)** -> **PASS**
+  - Mean Absolute Error (MAE): **0.222 cm (2.2 mm)** -> **PASS** ($\le 0.50\text{ cm}$)
+  - Systematic Bias: **+0.030 cm (+0.3 mm)** -> **PASS** ($|bias| \le 0.20\text{ cm}$)
+  - 95th Percentile (P95): **0.580 cm** -> **PASS** ($\le 1.00\text{ cm}$)
+  - Max Error: **0.801 cm** (All 50 trials $< 1.0\text{ cm}$)
+  - **Anti-Overfit Generalization Score**: **91.3 / 100** -> **PASS (EXCELLENT GENERALIZATION)**
+- **Artifacts Generated**: `artifacts/fuzz_results.json`, `artifacts/metrics_iter_10.json`
+

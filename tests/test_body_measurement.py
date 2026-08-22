@@ -67,7 +67,7 @@ class TestArucoMetricScaler:
 
 class TestSubPixelEdgeDetector:
     def test_exact_subpixel_boundary_recovery(self):
-        detector = SubPixelEdgeDetector(gaussian_sigma=1.8, strip_half_height=2)
+        detector = SubPixelEdgeDetector(gaussian_sigma=1.8, strip_half_height=2, psf_boundary_bias_px=0.0)
         
         w, h = 800, 200
         img = np.full((h, w), 200, dtype=np.uint8)

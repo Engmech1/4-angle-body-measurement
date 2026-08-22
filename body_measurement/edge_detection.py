@@ -34,7 +34,7 @@ class SubPixelEdgeDetector:
         gaussian_sigma: float = 1.8,
         strip_half_height: int = 2,
         min_gradient_threshold: float = 10.0,
-        psf_boundary_bias_px: float = 0.0,
+        psf_boundary_bias_px: float = 0.65,
     ):
         """
         Initializes the sub-pixel edge detector.
@@ -156,15 +156,31 @@ class SubPixelEdgeDetector:
         snr_left = left_peak_val / noise_floor
         snr_right = right_peak_val / noise_floor
         min_snr = min(snr_left, snr_right)
+        # Measure edge transition width (FWHM) to reject motion-blurred / unsharp boundaries
+        def _calc_fwhm(idx: int, val: float) -> int:
+            half_val = val / 2.0
+            l_idx = idx
+            while l_idx > 0 and grad_mag[l_idx] > half_val:
+                l_idx -= 1
+            r_idx = idx
+            while r_idx < len(grad_mag) - 1 and grad_mag[r_idx] > half_val:
+                r_idx += 1
+            return r_idx - l_idx
+
+        fwhm_left = _calc_fwhm(left_peak_idx, left_peak_val)
+        fwhm_right = _calc_fwhm(right_peak_idx, right_peak_val)
+        max_fwhm = max(fwhm_left, fwhm_right)
+        min_peak = min(left_peak_val, right_peak_val)
 
         is_valid = (
             width_pixels > 20.0
-            and left_peak_val >= self.min_gradient_threshold
-            and right_peak_val >= self.min_gradient_threshold
+            and min_peak >= self.min_gradient_threshold
+            and min_snr >= 2.0
+            and max_fwhm <= 15.0
             and sub_left_x < sub_right_x
         )
 
-        confidence = max(0.0, min(1.0, (min_snr - 1.0) / 10.0)) if is_valid else 0.0
+        confidence = max(0.0, min(1.0, (min_snr - 1.0) / 9.0)) if is_valid else 0.0
 
         return EdgeSliceResult(
             y_pixel=y_slice,

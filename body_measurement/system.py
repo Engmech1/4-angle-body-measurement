@@ -75,7 +75,7 @@ class BodyMeasurementSystem:
         marker_size_cm: float = 15.0,
         gaussian_sigma: float = 1.8,
         mad_threshold: float = 2.5,
-        psf_boundary_bias_px: float = 0.65,
+        psf_boundary_bias_px: float = 0.95,
         reconstruction_method: ReconstructionMethod = ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE,
     ):
         self.scaler = ArucoMetricScaler(marker_size_cm=marker_size_cm)
@@ -225,6 +225,12 @@ class BodyMeasurementSystem:
         # Quality Gating & Sanity Checks
         quality_flags = []
         is_valid = recon_res.is_valid
+
+        # 0. Burst confidence and edge sharpness check
+        for ang_val, b_res in self._burst_data.items():
+            if b_res.mean_confidence < 0.30:
+                quality_flags.append(f"QUALITY_WARN_LOW_CONFIDENCE_ANGLE_{ang_val}")
+                is_valid = False
 
         # 1. Front / Back symmetry check (detects asymmetric clothing drapes and yaw errors)
         coronal_asymmetry = abs(w_0 - w_180)
