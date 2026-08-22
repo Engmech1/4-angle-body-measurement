@@ -241,3 +241,25 @@ class TestFullAdversarialQA:
         assert eval_res.passed_target_0_5cm is True, (
             f"Adversarial QA failed: error {eval_res.absolute_error_cm:.3f} cm exceeds 0.5 cm target."
         )
+
+
+class TestResearchAnthropometricEngine:
+    def test_smpl_shape_and_full_body_biometrics(self):
+        from body_measurement.research_integrations import ResearchAnthropometricEngine
+        
+        engine = ResearchAnthropometricEngine()
+        report = engine.compute_full_body_biometrics(
+            waist_perimeter_cm=85.0,
+            coronal_width_cm=32.0,
+            sagittal_depth_cm=22.0,
+            height_cm=178.0,
+            gender="male",
+        )
+        
+        assert report.waist_circumference_cm == 85.0
+        assert report.chest_circumference_cm > report.waist_circumference_cm
+        assert report.hip_circumference_cm > report.waist_circumference_cm
+        assert 5.0 <= report.estimated_body_fat_percentage <= 35.0
+        assert report.smpl_shape.beta_coefficients.shape == (10,)
+        assert report.smpl_shape.estimated_weight_kg > 50.0
+

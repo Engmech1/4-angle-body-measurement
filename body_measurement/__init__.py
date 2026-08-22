@@ -1,6 +1,6 @@
 """
 Exercise App - 4-Angle Guided Capture Body Measurement System.
-High-precision computer vision, biomechanical and ML-augmented perimeter estimation package.
+High-precision computer vision, biomechanical, ML, and research-backed anthropometric package.
 """
 
 from body_measurement.adversarial_simulator import (
@@ -26,6 +26,11 @@ from body_measurement.reconstruction import (
     CrossSectionResult,
     ReconstructionMethod,
 )
+from body_measurement.research_integrations import (
+    FullBodyBiometricReport,
+    ResearchAnthropometricEngine,
+    SMPLShapeEstimate,
+)
 from body_measurement.scaling import ArucoMetricScaler, CalibrationResult
 from body_measurement.system import (
     BodyMeasurementSummary,
@@ -33,7 +38,7 @@ from body_measurement.system import (
     CaptureAngle,
 )
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 __all__ = [
     "ArucoMetricScaler",
@@ -58,4 +63,7 @@ __all__ = [
     "AdaptiveMLReconstructor",
     "BiomechanicalFeatureVector",
     "MLMeasurementResult",
+    "ResearchAnthropometricEngine",
+    "SMPLShapeEstimate",
+    "FullBodyBiometricReport",
 ]
