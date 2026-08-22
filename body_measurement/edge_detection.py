@@ -69,6 +69,8 @@ class SubPixelEdgeDetector:
         image: np.ndarray,
         y_slice: int,
         search_region_margin_ratio: float = 0.05,
+        center_x_hint: Optional[float] = None,
+        expected_half_width_px: Optional[float] = None,
     ) -> EdgeSliceResult:
         """
         Extracts sub-pixel left and right edges at scanline y_slice.
@@ -77,6 +79,8 @@ class SubPixelEdgeDetector:
             image: 2D Grayscale or 3D BGR image.
             y_slice: Target horizontal line Y.
             search_region_margin_ratio: Image margin to exclude from edge search.
+            center_x_hint: Optional estimated center of torso X.
+            expected_half_width_px: Optional expected torso half-width in pixels.
 
         Returns:
             EdgeSliceResult with sub-pixel edge coordinates and confidence.
@@ -108,19 +112,27 @@ class SubPixelEdgeDetector:
 
         # Define search windows for Left Edge and Right Edge
         margin = int(w * search_region_margin_ratio)
-        mid_x = w // 2
+        mid_x = int(center_x_hint) if center_x_hint is not None else w // 2
+        mid_x = int(np.clip(mid_x, margin + 20, w - margin - 20))
 
-        left_search = grad_mag[margin:mid_x]
-        right_search = grad_mag[mid_x:w - margin]
+        if expected_half_width_px is not None:
+            left_bound = max(margin, int(mid_x - expected_half_width_px * 1.8))
+            right_bound = min(w - margin, int(mid_x + expected_half_width_px * 1.8))
+        else:
+            left_bound = margin
+            right_bound = w - margin
+
+        left_search = grad_mag[left_bound:mid_x]
+        right_search = grad_mag[mid_x:right_bound]
 
         if len(left_search) < 5 or len(right_search) < 5:
             return EdgeSliceResult(y_slice, 0.0, 0.0, 0.0, 0.0, 0.0, False)
 
-        # 1. Left Edge: Find strongest peak in left half
-        left_peak_idx = margin + int(np.argmax(left_search))
+        # 1. Left Edge: Find strongest peak in left region
+        left_peak_idx = left_bound + int(np.argmax(left_search))
         left_peak_val = grad_mag[left_peak_idx]
 
-        # 2. Right Edge: Find strongest peak in right half
+        # 2. Right Edge: Find strongest peak in right region
         right_peak_idx = mid_x + int(np.argmax(right_search))
         right_peak_val = grad_mag[right_peak_idx]
 

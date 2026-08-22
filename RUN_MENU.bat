@@ -1,13 +1,37 @@
 @echo off
 chcp 65001 > nul
-cls
+setlocal enabledelayedexpansion
 title Exercise App - 4-Angle Guided Capture & ML Body Measurement Engine
+
+:: Find Python Executable
+set "PYTHON_EXE="
+if exist "C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe" (
+    set "PYTHON_EXE=C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe"
+) else (
+    where py >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_EXE=py -3"
+    ) else (
+        where python >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "PYTHON_EXE=python"
+        )
+    )
+)
+
+if "%PYTHON_EXE%"=="" (
+    echo [ERROR] Python not found on system!
+    pause
+    exit /b 1
+)
 
 :MENU
 cls
 echo ==============================================================================
 echo       EXERCISE APP: 4-ANGLE GUIDED CAPTURE + ML MEASUREMENT SYSTEM
 echo                  High-Precision Computer Vision & ML Engine
+echo ==============================================================================
+echo  Python Path: %PYTHON_EXE%
 echo ==============================================================================
 echo.
 echo  กรุณาเลือกเมนูที่ต้องการรัน (Select an option):
@@ -57,7 +81,7 @@ cls
 echo ==============================================================================
 echo   STARTING LIVE COMPUTER WEBCAM CAPTURE + ML ENGINE...
 echo ==============================================================================
-python live_camera_capture.py
+%PYTHON_EXE% live_camera_capture.py
 echo.
 echo กดปุ่มใดๆ เพื่อกลับสู่เมนูหลัก...
 pause > nul
@@ -68,7 +92,7 @@ cls
 echo ==============================================================================
 echo   RUNNING INTERACTIVE GUIDED CAPTURE DEMO...
 echo ==============================================================================
-python demo_capture.py
+%PYTHON_EXE% demo_capture.py
 echo.
 echo กดปุ่มใดๆ เพื่อกลับสู่เมนูหลัก...
 pause > nul
@@ -79,7 +103,7 @@ cls
 echo ==============================================================================
 echo   RUNNING ADVERSARIAL QA BENCHMARK (6 SOMATOTYPES)...
 echo ==============================================================================
-python run_simulation.py
+%PYTHON_EXE% run_simulation.py
 echo.
 echo กดปุ่มใดๆ เพื่อกลับสู่เมนูหลัก...
 pause > nul
@@ -90,7 +114,7 @@ cls
 echo ==============================================================================
 echo   GENERATING VISUAL DIAGNOSTIC REPORT...
 echo ==============================================================================
-python visualize_pipeline.py
+%PYTHON_EXE% visualize_pipeline.py
 if exist body_measurement_visual_report.png (
     echo.
     echo [INFO] เปิดรูปภาพกราฟวิเคราะห์ (body_measurement_visual_report.png)...
@@ -106,7 +130,7 @@ cls
 echo ==============================================================================
 echo   TRAINING CONTINUAL LEARNING ML MODEL...
 echo ==============================================================================
-python train_ml_model.py
+%PYTHON_EXE% train_ml_model.py
 echo.
 echo กดปุ่มใดๆ เพื่อกลับสู่เมนูหลัก...
 pause > nul
@@ -117,7 +141,7 @@ cls
 echo ==============================================================================
 echo   RUNNING PYTEST TEST SUITE...
 echo ==============================================================================
-pytest -v
+%PYTHON_EXE% -m pytest -v
 echo.
 echo กดปุ่มใดๆ เพื่อกลับสู่เมนูหลัก...
 pause > nul

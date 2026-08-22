@@ -58,6 +58,8 @@ class BurstFrameProcessor:
         y_slice: int,
         angle_degrees: int,
         pixels_per_cm: float,
+        center_x_hint: Optional[float] = None,
+        expected_half_width_px: Optional[float] = None,
     ) -> BurstAngleResult:
         """
         Processes a burst of frames in memory, immediately discarding raw image buffers.
@@ -67,6 +69,8 @@ class BurstFrameProcessor:
             y_slice: Anatomical Y pixel coordinate to sample.
             angle_degrees: Current angle (0, 90, 180, or 270).
             pixels_per_cm: Calibrated metric scale factor.
+            center_x_hint: Optional estimated center of torso X.
+            expected_half_width_px: Optional expected torso half-width in pixels.
 
         Returns:
             BurstAngleResult containing the robust, sway-compensated metric width.
@@ -76,7 +80,12 @@ class BurstFrameProcessor:
         # Process each frame sequentially and immediately delete raw buffer
         for frame in frames:
             if frame is not None and frame.size > 0:
-                edge_res = self.edge_detector.extract_slice_edges(frame, y_slice)
+                edge_res = self.edge_detector.extract_slice_edges(
+                    frame,
+                    y_slice,
+                    center_x_hint=center_x_hint,
+                    expected_half_width_px=expected_half_width_px,
+                )
                 if edge_res.is_valid:
                     raw_results.append(edge_res)
             # PRIVACY ENFORCEMENT: Explicitly delete raw frame immediately

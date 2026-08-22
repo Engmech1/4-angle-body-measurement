@@ -5,7 +5,7 @@ Connects to computer's webcam (or provides synthetic fallback if camera unavaila
 and guides the user through real-time 4-angle guided capture:
 1. Real-Time ArUco Marker Detection & Live PPM Overlay
 2. Real-Time MediaPipe Pose Skeleton & Anatomical Slice Y-Tracking
-3. 30-Frame In-Memory Burst Capture (0°, 90°, 180°, 270°) with Zero-Raw-Media Privacy
+3. 30-Frame In-Memory Burst Capture (0, 90, 180, 270 deg) with Zero-Raw-Media Privacy
 4. Machine Learning Biomechanical Optimization & Residual Bias Correction
 5. Online Active Learning (Press 'U' to input reference tape measure and train ML model live!)
 """
@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
+# Ensure UTF-8 output on Windows terminal
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -76,6 +77,7 @@ class LiveCameraApp:
         self.pixels_per_cm = 12.5  # Default calibration (updated when ArUco detected)
         self.calibration_verified = False
         self.current_slice_y = None
+        self.center_x_hint = None
         self.torso_height_px = 750.0
 
         # Burst Data across 4 angles
@@ -89,27 +91,37 @@ class LiveCameraApp:
     def _init_camera(self) -> None:
         """Initializes OpenCV VideoCapture with fallback to synthetic stream."""
         logger.info(f"Connecting to Camera Index {self.camera_index}...")
-        self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY)
-        
-        if self.cap and self.cap.isOpened():
-            # Configure 1080p / 720p resolution
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-            self.cap.set(cv2.CAP_PROP_FPS, 30)
-            ret, test_frame = self.cap.read()
-            if ret and test_frame is not None:
-                logger.info("Live Computer Webcam connected successfully!")
-                self.is_synthetic_camera = False
-                return
+        try:
+            backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
+            self.cap = cv2.VideoCapture(self.camera_index, backend)
+            if self.cap and self.cap.isOpened():
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                self.cap.set(cv2.CAP_PROP_FPS, 30)
+                ret, test_frame = self.cap.read()
+                if ret and test_frame is not None and test_frame.size > 0:
+                    logger.info("Live Computer Webcam connected successfully!")
+                    self.is_synthetic_camera = False
+                    return
+        except Exception as e:
+            logger.warning(f"Error opening camera {self.camera_index}: {e}")
 
         logger.warning("No physical webcam detected. Enabling Interactive Virtual Camera Simulator.")
         self.is_synthetic_camera = True
+
+    def toggle_camera_mode(self) -> None:
+        """Toggles between physical webcam and synthetic simulator."""
+        if not self.is_synthetic_camera:
+            self.is_synthetic_camera = True
+            logger.info("Switched to Synthetic Camera Simulator mode.")
+        else:
+            self._init_camera()
 
     def get_frame(self) -> np.ndarray:
         """Fetches frame from webcam or generates synthetic video feed."""
         if not self.is_synthetic_camera and self.cap and self.cap.isOpened():
             ret, frame = self.cap.read()
-            if ret and frame is not None:
+            if ret and frame is not None and frame.size > 0:
                 return frame
 
         # Synthetic Interactive Frame Generator
@@ -160,7 +172,7 @@ class LiveCameraApp:
         fps = 30.0
 
         logger.info("Interactive Camera Application Started.")
-        logger.info("Controls: [SPACE] Capture/Next | [C] Calibrate | [S] Switch Site | [U] Update ML | [Q] Quit")
+        logger.info("Controls: [SPACE] Capture/Next | [C] Calibrate | [S] Switch Site | [T] Toggle Sim | [U] Update ML | [Q] Quit")
 
         while True:
             raw_frame = self.get_frame()
@@ -170,7 +182,7 @@ class LiveCameraApp:
             # Calculate FPS
             frame_count += 1
             if time.time() - fps_timer >= 1.0:
-                fps = frame_count / (time.time() - fps_timer)
+                fps = frame_count / max(1e-3, (time.time() - fps_timer))
                 frame_count = 0
                 fps_timer = time.time()
 
@@ -179,7 +191,6 @@ class LiveCameraApp:
             if calib_res.is_valid:
                 self.pixels_per_cm = calib_res.pixels_per_cm
                 self.calibration_verified = True
-                # Draw ArUco corners
                 pts = calib_res.corners.astype(np.int32).reshape((-1, 1, 2))
                 cv2.polylines(display_frame, [pts], True, (0, 255, 0), 2)
                 cv2.putText(display_frame, f"ArUco #{calib_res.marker_id} ({self.pixels_per_cm:.1f} px/cm)",
@@ -189,6 +200,18 @@ class LiveCameraApp:
             anchor_res = self.anchor_engine.compute_anchor_slice(raw_frame, site=self.selected_site)
             self.current_slice_y = anchor_res.slice_y_pixel
             self.torso_height_px = anchor_res.torso_height_pixels
+
+            # Compute center of body hint
+            if anchor_res.keypoints_summary:
+                kp = anchor_res.keypoints_summary
+                if "left_hip" in kp and "right_hip" in kp:
+                    self.center_x_hint = (kp["left_hip"][0] + kp["right_hip"][0]) / 2.0
+                elif "left_shoulder" in kp and "right_shoulder" in kp:
+                    self.center_x_hint = (kp["left_shoulder"][0] + kp["right_shoulder"][0]) / 2.0
+
+                # Draw skeleton points
+                for name, pt in kp.items():
+                    cv2.circle(display_frame, (int(pt[0]), int(pt[1])), 5, (0, 255, 255), -1)
 
             # Draw anatomical measurement line
             y_line = anchor_res.slice_y_pixel
@@ -216,6 +239,8 @@ class LiveCameraApp:
                 idx = (sites.index(self.selected_site) + 1) % len(sites)
                 self.selected_site = sites[idx]
                 logger.info(f"Target anatomical site switched to: {self.selected_site.value}")
+            elif key == ord('t') or key == ord('T'):  # T: Toggle Simulator
+                self.toggle_camera_mode()
             elif key == ord('r') or key == ord('R'):  # R: Reset
                 self.state = CaptureState.CALIBRATING
                 self.burst_results.clear()
@@ -254,7 +279,6 @@ class LiveCameraApp:
 
     def _handle_state_machine(self, frame: np.ndarray) -> None:
         """Collects 30-frame in-memory bursts and runs ML analysis."""
-        # 1. Burst Ingestion
         if self.state in (
             CaptureState.BURST_FRONT_0,
             CaptureState.BURST_RIGHT_90,
@@ -263,7 +287,6 @@ class LiveCameraApp:
         ):
             self.burst_buffer.append(frame)
             if len(self.burst_buffer) >= self.burst_target_count:
-                # Map state to angle
                 angle_map = {
                     CaptureState.BURST_FRONT_0: (0, CaptureState.READY_RIGHT_90),
                     CaptureState.BURST_RIGHT_90: (90, CaptureState.READY_BACK_180),
@@ -275,16 +298,16 @@ class LiveCameraApp:
                 # Process 30 frames in-memory
                 res = self.burst_processor.process_burst(
                     frames=self.burst_buffer,
-                    y_slice=self.current_slice_y or 360,
+                    y_slice=self.current_slice_y or (frame.shape[0] // 2),
                     angle_degrees=angle_deg,
                     pixels_per_cm=self.pixels_per_cm,
+                    center_x_hint=self.center_x_hint,
                 )
                 self.burst_results[angle_deg] = res
                 self.burst_buffer.clear()
                 self.state = next_state
-                logger.info(f"Angle {angle_deg}° burst processed: Width = {res.width_cm:.2f} cm (Sway: {res.center_sway_cm:.2f} cm)")
+                logger.info(f"Angle {angle_deg} deg burst processed: Width = {res.width_cm:.2f} cm (Sway: {res.center_sway_cm:.2f} cm)")
 
-        # 2. Machine Learning Analysis
         if self.state == CaptureState.ANALYZING:
             logger.info("Executing Machine Learning Biomechanical Optimization...")
             features = self.ml_optimizer.extract_features(
@@ -303,7 +326,7 @@ class LiveCameraApp:
     def _prompt_online_ml_update(self) -> None:
         """Allows live user calibration check to train ML model online."""
         if self.last_result is None:
-            print("\n[ML ONLINE UPDATE] No measurement session available to update. Complete a 4-angle capture first.")
+            print("\n[ML ONLINE UPDATE] No measurement session available. Complete a 4-angle capture first.")
             return
 
         print("\n" + "=" * 60)
@@ -323,7 +346,6 @@ class LiveCameraApp:
                         ground_truth_perimeter_cm=gt_val,
                     )
                     print(f"\n[SUCCESS] ML Model trained online! Calibrated residual bias reduced by: {err:.3f} cm.")
-                    # Re-run prediction
                     self.last_result = self.ml_optimizer.predict_and_optimize(
                         self.last_result.features, site=self.selected_site
                     )
