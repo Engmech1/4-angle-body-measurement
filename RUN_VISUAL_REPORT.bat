@@ -1,37 +1,27 @@
 @echo off
-chcp 65001 > nul
-setlocal enabledelayedexpansion
+setlocal
+cd /d "%~dp0"
+title Exercise App - Visual Diagnostic Report Generator
 
 :: Find Python Executable
-set "PYTHON_EXE="
-if exist "C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe" (
-    set "PYTHON_EXE=C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe"
-) else (
+set "PY_EXE=C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe"
+
+if not exist "%PY_EXE%" (
     where py >nul 2>&1
-    if !errorlevel! equ 0 (
-        set "PYTHON_EXE=py -3"
+    if %errorlevel% equ 0 (
+        set "PY_EXE=py -3"
     ) else (
-        where python >nul 2>&1
-        if !errorlevel! equ 0 (
-            set "PYTHON_EXE=python"
-        )
+        set "PY_EXE=python"
     )
 )
 
-if "%PYTHON_EXE%"=="" (
-    echo [ERROR] Python not found on system!
-    pause
-    exit /b 1
-)
-
-cls
 echo ==============================================================================
-echo   STARTING VISUAL DIAGNOSTIC REPORT GENERATOR...
+echo   GENERATING VISUAL DIAGNOSTIC REPORT...
 echo ==============================================================================
-%PYTHON_EXE% visualize_pipeline.py
+"%PY_EXE%" visualize_pipeline.py
 if exist body_measurement_visual_report.png (
     echo.
-    echo [INFO] เปิดรูปภาพกราฟวิเคราะห์ (body_measurement_visual_report.png)...
+    echo [INFO] Opening visual diagnostic plot (body_measurement_visual_report.png)...
     start body_measurement_visual_report.png
 )
 echo.

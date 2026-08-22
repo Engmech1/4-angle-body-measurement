@@ -1,33 +1,27 @@
 @echo off
-chcp 65001 > nul
-setlocal enabledelayedexpansion
+setlocal
+cd /d "%~dp0"
+title Exercise App - Adversarial QA Benchmark
 
 :: Find Python Executable
-set "PYTHON_EXE="
-if exist "C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe" (
-    set "PYTHON_EXE=C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe"
-) else (
+set "PY_EXE=C:\Users\thana\.pyenv\pyenv-win\versions\3.13.2\python.exe"
+
+if not exist "%PY_EXE%" (
     where py >nul 2>&1
-    if !errorlevel! equ 0 (
-        set "PYTHON_EXE=py -3"
+    if %errorlevel% equ 0 (
+        set "PY_EXE=py -3"
     ) else (
-        where python >nul 2>&1
-        if !errorlevel! equ 0 (
-            set "PYTHON_EXE=python"
-        )
+        set "PY_EXE=python"
     )
 )
 
-if "%PYTHON_EXE%"=="" (
-    echo [ERROR] Python not found on system!
-    pause
-    exit /b 1
-)
-
-cls
 echo ==============================================================================
 echo   STARTING ADVERSARIAL QA BENCHMARK (6 SOMATOTYPES)...
 echo ==============================================================================
-%PYTHON_EXE% run_simulation.py
+"%PY_EXE%" run_simulation.py
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Application exited with code %errorlevel%
+)
 echo.
 pause
