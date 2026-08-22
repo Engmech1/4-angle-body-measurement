@@ -1,6 +1,6 @@
 # Test Change Requests (TEST_CHANGE_REQUEST.md)
 
-### Request TCR-001: Correct Invariant Direction for Convex Hull vs. Raw Anatomical Contour in Tier 1
+## Request TCR-001: Correct Invariant Direction for Convex Hull vs. Raw Anatomical Contour in Tier 1
 
 - **Status**: PARKED (Awaiting Human Approval)
 - **Target File**: `eval/tiers.py` (Tier 1 Analytic Math) & ANTIGRAVITY Build Spec §4 Tier 1

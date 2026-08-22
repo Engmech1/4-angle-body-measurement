@@ -1,0 +1,16 @@
+{
+  "canary_name": "frozen_reference_cross_section_v1",
+  "morphology": {
+    "coronal_width_cm": 30.0,
+    "sagittal_depth_cm": 20.0,
+    "superellipse_p": 2.45,
+    "lordosis_depth_cm": 2.4,
+    "num_samples": 2048
+  },
+  "expected_metrics": {
+    "perimeter_hull_cm": 81.954121,
+    "perimeter_raw_cm": 82.394632,
+    "area_cm2": 497.128456,
+    "sha256_hash": "2b1d2f1e7cd0a7eddc221cd501fe9f59c167ec006fc54e34f3cc9a2abb56aa2b"
+  }
+}
