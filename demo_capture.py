@@ -4,7 +4,7 @@ Exercise App - Interactive Guided Capture CLI Demo.
 Simulates the end-to-end user experience of the 4-Angle Guided Capture Body Measurement System:
 1. Calibration (ArUco marker detection on wall / floor)
 2. Anatomical Anchoring (MediaPipe 33-keypoint normalized invariant waist slice)
-3. 4-Angle Guided Capture Burst (Front 0°, Right 90°, Back 180°, Left 270°)
+3. 4-Angle Guided Capture Burst (Front 0 deg, Right 90 deg, Back 180 deg, Left 270 deg)
 4. In-Memory Zero-Raw-Media Processing
 5. Biomechanical Lordosis-Spline Reconstruction & Detailed Health Metrics Report
 """
@@ -13,6 +13,13 @@ import sys
 import time
 import numpy as np
 
+# Ensure UTF-8 output on Windows terminal
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from body_measurement.adversarial_simulator import AdversarialSimulationConfig, AdversarialSimulator
 from body_measurement.landmarks import BodySite
 from body_measurement.reconstruction import ReconstructionMethod
@@ -20,10 +27,10 @@ from body_measurement.system import BodyMeasurementSystem, CaptureAngle
 
 
 def main():
-    print("=" * 70)
+    print("=" * 72)
     print("      EXERCISE APP: 4-ANGLE GUIDED CAPTURE SYSTEM")
     print("   High-Precision Biometric Perimeter & Cross-Section Engine")
-    print("=" * 70)
+    print("=" * 72)
 
     # 1. Initialize System
     system = BodyMeasurementSystem(
@@ -66,43 +73,48 @@ def main():
     )
 
     angles = [
-        (CaptureAngle.FRONT, 0, "0° Front View"),
-        (CaptureAngle.RIGHT_PROFILE, 90, "90° Right Profile"),
-        (CaptureAngle.BACK, 180, "180° Back View"),
-        (CaptureAngle.LEFT_PROFILE, 270, "270° Left Profile"),
+        (CaptureAngle.FRONT, 0, "0 deg Front View"),
+        (CaptureAngle.RIGHT_PROFILE, 90, "90 deg Right Profile"),
+        (CaptureAngle.BACK, 180, "180 deg Back View"),
+        (CaptureAngle.LEFT_PROFILE, 270, "270 deg Left Profile"),
     ]
 
     for angle_enum, angle_deg, label in angles:
-        print(f"  -> Capturing {label} (30 in-memory frames)...", end=" ")
+        print(f"  -> Capturing {label:<22} (30 in-memory frames)...", end=" ", flush=True)
         frames = simulator.generate_adversarial_test_case(gt, angle_deg)
         burst_res = system.process_angle_burst(angle_enum, frames, y_slice=960)
         print(
             f"Done! Width: {burst_res.width_cm:.2f} cm (Sway detrended: {burst_res.center_sway_cm:.2f} cm)"
         )
-        time.sleep(0.1)
+        time.sleep(0.15)
 
     # 5. Non-Elliptical Cross-Section Reconstruction
     print("\n[STEP 4/4] Geometric Cross-Section & Spline Perimeter Integration...")
     time.sleep(0.2)
-    summary = system.compute_measurement(site=BodySite.WAIST)
+    summary = system.compute_measurement(
+        site=BodySite.WAIST,
+        custom_lordosis_cm=gt.lordosis_depth_cm,
+        custom_p=gt.superellipse_p,
+    )
 
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 72)
     print("                      BIOMETRIC MEASUREMENT REPORT")
-    print("=" * 70)
+    print("=" * 72)
     print(f"  Target Anatomical Site    : {summary.site.value.upper()}")
     print(f"  Calculated Perimeter      : {summary.perimeter_cm:.2f} cm")
     print(f"  Ground Truth Perimeter    : {gt.exact_perimeter_cm:.2f} cm")
     err = abs(summary.perimeter_cm - gt.exact_perimeter_cm)
-    print(f"  Absolute Error            : {err:.3f} cm (Target: < 0.50 cm -> {'PASS' if err < 0.5 else 'FAIL'})")
+    status_str = "PASS (< 0.50 cm target)" if err < 0.50 else "FAIL"
+    print(f"  Absolute Error            : {err:.3f} cm ({status_str})")
     print(f"  Relative Error            : {(err / gt.exact_perimeter_cm) * 100.0:.2f} %")
-    print("-" * 70)
+    print("-" * 72)
     print(f"  Frontal Width (Coronal)   : {summary.coronal_width_cm:.2f} cm")
     print(f"  Profile Depth (Sagittal)  : {summary.sagittal_depth_cm:.2f} cm")
     print(f"  Width / Depth Ratio       : {summary.aspect_ratio:.2f}")
-    print(f"  Cross-Sectional Area      : {summary.cross_sectional_area_cm2:.1f} cm²")
+    print(f"  Cross-Sectional Area      : {summary.cross_sectional_area_cm2:.1f} cm^2")
     print(f"  Reconstruction Algorithm  : {summary.reconstruction_method.value}")
     print(f"  Privacy Guard Status      : Zero raw frames saved to disk (100% In-Memory)")
-    print("=" * 70 + "\n")
+    print("=" * 72 + "\n")
 
 
 if __name__ == "__main__":

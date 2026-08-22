@@ -1,4 +1,4 @@
-"""
+r"""
 Adversarial QA Simulator and Synthetic Test Case Generator.
 
 Implements 'The Anti-Dumb Test':
