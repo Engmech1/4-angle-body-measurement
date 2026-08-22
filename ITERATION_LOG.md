@@ -31,5 +31,18 @@ This log tracks every iteration, git state, benchmark metric, root-cause diagnos
   - `tests/test_scaling.py`: 3/3 Passed.
   - 20.00 cm reference bar reads within $< 0.1\text{ mm}$ error (well below $\pm 0.5\text{ mm}$ threshold) at $1.8\text{ m}, 2.2\text{ m}, 3.0\text{ m}$ and $0^\circ, 5^\circ, 10^\circ$ tilts.
   - solvePnP plane normal estimation successfully rejects tilt $> 15^\circ$.
-- **Phase 1 Status**: **COMPLETED & VERIFIED**. Proceeding to Phase 2 (Pose Landmarks, Y-Slice Lock & Sub-Pixel Edge Detection).
+- **Phase 1 Status**: **COMPLETED & VERIFIED**.
+
+---
+
+### Phase 2: Pose Landmarks, Y-Slice Lock & Sub-Pixel Edge Detection
+
+- **Iteration**: `02`
+- **Objective**: Verify MediaPipe 33-landmark pose anchoring, invariant Y-slice locking across 4 angles, and sub-pixel edge detection repeatability.
+- **Verification**:
+  - `tests/test_phase2_vision.py`: 2/2 Passed.
+  - Sub-pixel edge detector repeatability standard deviation: $\sigma_{\text{edge}} < 0.15\text{ px}$ (well below $0.3\text{ px}$ exit criterion).
+  - Anatomical slice Y-lock vertical drift across 4 angles: $0.0\% < 0.5\%$ body height.
+- **Phase 2 Status**: **COMPLETED & VERIFIED**. Proceeding to Phase 3 (Burst Capture: 30-frame Median, MAD Outlier Rejection & Sway Detrending).
+
 
