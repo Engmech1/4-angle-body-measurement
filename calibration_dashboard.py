@@ -511,6 +511,9 @@ class CalibrationDashboardApp:
         # Morphological aspect ratio proxy ~ 1.44 for waist
         depth_right_cm = float(width_front_cm / 1.44)
 
+        lordosis_cm = depth_right_cm * 0.125
+        superellipse_p = 2.45
+
         # Reconstruct 2D Lordosis Cross Section
         recon_res = self.reconstructor.reconstruct_cross_section(
             width_front_cm=width_front_cm,
@@ -518,6 +521,8 @@ class CalibrationDashboardApp:
             width_back_cm=width_front_cm,
             depth_left_cm=depth_right_cm,
             method=ReconstructionMethod.ANTHROPOMETRIC_LORDOSIS_SPLINE,
+            custom_lordosis_depth_cm=lordosis_cm,
+            custom_superellipse_p=superellipse_p,
         )
 
         # Draw 2D Contour in Left Half (Center: 200, 240)
@@ -545,8 +550,8 @@ class CalibrationDashboardApp:
             cv2.polylines(panel, [np.array(pts_contour, dtype=np.int32)], True, (74, 222, 128), 2, cv2.LINE_AA)
 
         # Anatomical Markers
-        cv2.circle(panel, (cx, int(cy + (depth_right_cm / 2.0 - recon_res.lordosis_depth_cm) * scale_plot)), 4, (250, 204, 21), -1)
-        cv2.putText(panel, "Lumbar Spine", (cx + 8, int(cy + (depth_right_cm / 2.0 - recon_res.lordosis_depth_cm) * scale_plot)),
+        cv2.circle(panel, (cx, int(cy + (depth_right_cm / 2.0 - lordosis_cm) * scale_plot)), 4, (250, 204, 21), -1)
+        cv2.putText(panel, "Lumbar Spine", (cx + 8, int(cy + (depth_right_cm / 2.0 - lordosis_cm) * scale_plot)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.35, (250, 204, 21), 1)
 
         # Right Half: Biometrics & ML Telemetry Card (X: 420 - 780)
@@ -568,8 +573,8 @@ class CalibrationDashboardApp:
             f"Sagittal Depth (Y) : {recon_res.sagittal_depth_cm:.2f} cm",
             f"Aspect Ratio (W/D) : {recon_res.aspect_ratio:.2f}",
             f"Cross-Sect Area    : {recon_res.cross_sectional_area_cm2:.1f} cm^2",
-            f"Lordosis Furrow    : {recon_res.lordosis_depth_cm:.2f} cm",
-            f"Superellipse p*    : {recon_res.superellipse_p:.2f}",
+            f"Lordosis Furrow    : {lordosis_cm:.2f} cm",
+            f"Superellipse p*    : {superellipse_p:.2f}",
             f"Calibration Status : {'VERIFIED' if self.pixels_per_cm > 5 else 'DEFAULT'}",
         ]
 
