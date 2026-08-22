@@ -114,14 +114,16 @@ class BurstFrameProcessor:
 
         # 1. Outlier Rejection using Median Absolute Deviation (MAD / Modified Z-Score)
         median_w = float(np.median(widths))
-        mad = float(np.median(np.abs(widths - median_w)))
+        abs_diffs = np.abs(widths - median_w)
+        mad = float(np.median(abs_diffs))
 
         if mad > 1e-9:
             # Modified Z-Score: M_i = 0.6745 * |W_i - median(W)| / MAD
-            mod_z = 0.6745 * np.abs(widths - median_w) / mad
+            mod_z = 0.6745 * abs_diffs / mad
             inlier_mask = mod_z <= self.mad_threshold
         else:
-            inlier_mask = np.ones(total_frames, dtype=bool)
+            # If MAD is zero (majority identical), reject anything differing by more than 1.5 px
+            inlier_mask = abs_diffs <= 1.5
 
         valid_widths = widths[inlier_mask]
         valid_centers = centers[inlier_mask]
@@ -129,7 +131,7 @@ class BurstFrameProcessor:
 
         valid_count = len(valid_widths)
         if valid_count < int(total_frames * self.min_valid_ratio):
-            # Fallback to all if too aggressive
+            # Fallback if too aggressive
             valid_widths = widths
             valid_centers = centers
             valid_confs = confs
@@ -140,25 +142,8 @@ class BurstFrameProcessor:
         center_sway_px = float(np.max(valid_centers) - np.min(valid_centers)) if valid_count > 1 else 0.0
         center_sway_cm = center_sway_px / pixels_per_cm
 
-        # Sort widths for robust median / trimmed mean
-        sorted_indices = np.argsort(valid_widths)
-        sorted_w = valid_widths[sorted_indices]
-        sorted_c = valid_confs[sorted_indices]
-
-        # 10% Trimmed Mean or Weighted Median
-        trim_k = max(1, int(valid_count * 0.1))
-        if valid_count >= 10:
-            core_widths = sorted_w[trim_k:-trim_k]
-            core_confs = sorted_c[trim_k:-trim_k]
-        else:
-            core_widths = sorted_w
-            core_confs = sorted_c
-
-        if np.sum(core_confs) > 1e-6:
-            robust_width_px = float(np.average(core_widths, weights=core_confs))
-        else:
-            robust_width_px = float(np.median(valid_widths))
-
+        # Primary robust width estimate is the median of inlier frames
+        robust_width_px = float(np.median(valid_widths))
         width_std = float(np.std(valid_widths))
         width_cm = robust_width_px / pixels_per_cm
         mean_conf = float(np.mean(valid_confs))

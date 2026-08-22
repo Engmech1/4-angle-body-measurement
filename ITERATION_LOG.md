@@ -43,6 +43,19 @@ This log tracks every iteration, git state, benchmark metric, root-cause diagnos
   - `tests/test_phase2_vision.py`: 2/2 Passed.
   - Sub-pixel edge detector repeatability standard deviation: $\sigma_{\text{edge}} < 0.15\text{ px}$ (well below $0.3\text{ px}$ exit criterion).
   - Anatomical slice Y-lock vertical drift across 4 angles: $0.0\% < 0.5\%$ body height.
-- **Phase 2 Status**: **COMPLETED & VERIFIED**. Proceeding to Phase 3 (Burst Capture: 30-frame Median, MAD Outlier Rejection & Sway Detrending).
+- **Phase 2 Status**: **COMPLETED & VERIFIED**.
+
+---
+
+### Phase 3: Burst Capture, MAD Outlier Filtering & Sway Detrending
+
+- **Iteration**: `03`
+- **Objective**: Implement 30-frame burst processing, postural sway detrending, and MAD outlier rejection.
+- **Verification**:
+  - `tests/test_phase3_burst.py`: 2/2 Passed.
+  - Injected $\pm 3\text{ px}$ lateral sway and $1.5^\circ$ rotational jitter altered aggregated width by $< 0.4\text{ mm}$ (well below $1.0\text{ mm}$ exit criterion).
+  - MAD Modified Z-score filtering successfully rejected corrupted outlier frames with error $< 0.05\text{ mm}$.
+- **Phase 3 Status**: **COMPLETED & VERIFIED**. Proceeding to Phase 4 (Cross-Section Reconstruction & Perimeter Optimization).
+
 
 
