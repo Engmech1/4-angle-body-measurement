@@ -338,12 +338,6 @@ class CalibrationDashboardApp:
     # =========================================================================
     def _build_panel_pose_anchor(self, frame: np.ndarray) -> Tuple[np.ndarray, any]:
         p_w, p_h = 800, 450
-        panel = cv2.resize(frame, (p_w, p_h))
-
-        # Panel Header
-        cv2.rectangle(panel, (0, 0), (p_w, 32), (20, 20, 20), -1)
-        cv2.putText(panel, "[2] MEDIAPIPE POSE SKELETON & ANATOMICAL ANCHORING", (12, 22),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (250, 204, 21), 2)
 
         # Run Anatomical Anchor Engine
         anchor_res = self.anchor_engine.compute_anchor_slice(
@@ -352,50 +346,52 @@ class CalibrationDashboardApp:
             custom_ratio=self.site_ratio_override,
         )
 
-        scale_x = p_w / frame.shape[1]
+        # Render full-resolution advanced skeleton overlay (Colors, Joints, Angles, BBox, ID)
+        rendered_frame = self.anchor_engine.render_pose_overlay(
+            frame,
+            anchor_res,
+            min_confidence=0.40,
+            show_angles=True,
+            show_bbox=True,
+        )
+
+        panel = cv2.resize(rendered_frame, (p_w, p_h))
         scale_y = p_h / frame.shape[0]
 
-        # Draw Pose Skeleton & Joints
-        kp = anchor_res.keypoints_summary
-        if kp:
-            # Draw shoulder and hip connections
-            if "left_shoulder" in kp and "right_shoulder" in kp:
-                p1 = (int(kp["left_shoulder"][0] * scale_x), int(kp["left_shoulder"][1] * scale_y))
-                p2 = (int(kp["right_shoulder"][0] * scale_x), int(kp["right_shoulder"][1] * scale_y))
-                cv2.line(panel, p1, p2, (56, 189, 248), 2)
-
-            if "left_hip" in kp and "right_hip" in kp:
-                p1 = (int(kp["left_hip"][0] * scale_x), int(kp["left_hip"][1] * scale_y))
-                p2 = (int(kp["right_hip"][0] * scale_x), int(kp["right_hip"][1] * scale_y))
-                cv2.line(panel, p1, p2, (56, 189, 248), 2)
-
-            # Torso Spine Line
-            if "left_shoulder" in kp and "left_hip" in kp:
-                p1 = (int(kp["left_shoulder"][0] * scale_x), int(kp["left_shoulder"][1] * scale_y))
-                p2 = (int(kp["left_hip"][0] * scale_x), int(kp["left_hip"][1] * scale_y))
-                cv2.line(panel, p1, p2, (148, 163, 184), 1)
-
-            if "right_shoulder" in kp and "right_hip" in kp:
-                p1 = (int(kp["right_shoulder"][0] * scale_x), int(kp["right_shoulder"][1] * scale_y))
-                p2 = (int(kp["right_hip"][0] * scale_x), int(kp["right_hip"][1] * scale_y))
-                cv2.line(panel, p1, p2, (148, 163, 184), 1)
-
-            for name, pt in kp.items():
-                cv2.circle(panel, (int(pt[0] * scale_x), int(pt[1] * scale_y)), 5, (250, 204, 21), -1)
+        # Panel Header
+        cv2.rectangle(panel, (0, 0), (p_w, 32), (20, 20, 20), -1)
+        cv2.putText(panel, "[2] KINEMATIC POSE SKELETON & ANATOMICAL ANCHORING", (12, 22),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.52, (250, 204, 21), 2)
 
         # Draw Active Anatomical Slice Line
         y_slice_panel = int(anchor_res.slice_y_pixel * scale_y)
         cv2.line(panel, (20, y_slice_panel), (p_w - 20, y_slice_panel), (74, 222, 128), 2)
-        cv2.putText(panel, f">> {self.selected_site.value.upper()} SLICE (Y: {anchor_res.slice_y_pixel}px | Ratio: {self.site_ratio_override or 0.618:.2f}) <<",
+        cv2.putText(panel, f">> {self.selected_site.value.upper()} SLICE (Y: {anchor_res.slice_y_pixel}px) <<",
                     (30, y_slice_panel - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (74, 222, 128), 1)
 
-        # Telemetry Box
-        cv2.rectangle(panel, (p_w - 260, p_h - 65), (p_w - 12, p_h - 10), (15, 23, 42), -1)
-        cv2.rectangle(panel, (p_w - 260, p_h - 65), (p_w - 12, p_h - 10), (250, 204, 21), 1)
-        cv2.putText(panel, f"Torso Span : {anchor_res.torso_height_pixels:.0f} px ({anchor_res.torso_height_pixels/self.pixels_per_cm:.1f} cm)",
-                    (p_w - 250, p_h - 44), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (203, 213, 225), 1)
-        cv2.putText(panel, f"Pose Confidence: {anchor_res.confidence*100.0:.0f} %",
-                    (p_w - 250, p_h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (74, 222, 128), 1)
+        # Kinematics & Angles Telemetry Card
+        ang_lines = []
+        if anchor_res.joint_angles:
+            if "left_elbow" in anchor_res.joint_angles:
+                ang_lines.append(f"Elbows : L {anchor_res.joint_angles.get('left_elbow', 0):.0f}deg | R {anchor_res.joint_angles.get('right_elbow', 0):.0f}deg")
+            if "left_knee" in anchor_res.joint_angles:
+                ang_lines.append(f"Knees  : L {anchor_res.joint_angles.get('left_knee', 0):.0f}deg | R {anchor_res.joint_angles.get('right_knee', 0):.0f}deg")
+            if "spine_tilt" in anchor_res.joint_angles:
+                ang_lines.append(f"Spine Tilt: {anchor_res.joint_angles['spine_tilt']:.1f}deg from vertical")
+
+        card_h = 24 + len(ang_lines) * 18 + 24
+        cv2.rectangle(panel, (p_w - 290, p_h - card_h - 10), (p_w - 12, p_h - 10), (15, 23, 42), -1)
+        cv2.rectangle(panel, (p_w - 290, p_h - card_h - 10), (p_w - 12, p_h - 10), (250, 204, 21), 1)
+
+        cv2.putText(panel, f"Torso Span : {anchor_res.torso_height_pixels:.0f}px ({anchor_res.torso_height_pixels/max(0.1, self.pixels_per_cm):.1f}cm)",
+                    (p_w - 280, p_h - card_h + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (203, 213, 225), 1)
+
+        for i, text in enumerate(ang_lines):
+            cv2.putText(panel, text, (p_w - 280, p_h - card_h + 28 + i * 18),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, (74, 222, 128), 1)
+
+        cv2.putText(panel, f"Pose Confidence: {anchor_res.confidence*100.0:.0f}%",
+                    (p_w - 280, p_h - 18), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (250, 204, 21), 1)
 
         return panel, anchor_res
 
