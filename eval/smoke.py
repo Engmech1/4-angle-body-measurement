@@ -11,12 +11,18 @@ Outputs:
 4. Generates 1 4-view render (0°, 90°, 180°, 270°) saved to artifacts/smoke_render_4view.png.
 """
 
+import importlib.metadata
 import json
+import os
 from pathlib import Path
 import sys
-import time
+import warnings
 import cv2
 import numpy as np
+
+# Suppress non-critical third-party warnings
+warnings.filterwarnings("ignore")
+os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 
 # Ensure UTF-8 output on Windows terminal
 if hasattr(sys.stdout, "reconfigure"):
@@ -30,41 +36,44 @@ ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def get_package_versions() -> dict:
-    """Collects installed package versions."""
+    """Collects installed package versions using importlib metadata and module inspection."""
     versions = {
         "python": sys.version.split()[0],
     }
 
     packages = [
-        "numpy",
-        "scipy",
-        "cv2",
-        "mediapipe",
-        "hypothesis",
-        "albumentations",
-        "imagecorruptions",
-        "trimesh",
-        "anny",
-        "clad_body",
+        ("numpy", "numpy"),
+        ("scipy", "scipy"),
+        ("opencv-python", "cv2"),
+        ("mediapipe", "mediapipe"),
+        ("hypothesis", "hypothesis"),
+        ("albumentations", "albumentations"),
+        ("imagecorruptions", "imagecorruptions"),
+        ("trimesh", "trimesh"),
+        ("anny", "anny"),
+        ("clad-body", "clad_body"),
     ]
 
-    for pkg in packages:
+    for dist_name, import_name in packages:
+        ver = None
         try:
-            mod = __import__(pkg)
-            ver = getattr(mod, "__version__", "installed")
-            versions[pkg] = str(ver)
-        except ImportError:
-            versions[pkg] = "NOT_INSTALLED"
+            ver = importlib.metadata.version(dist_name)
+        except Exception:
+            try:
+                mod = __import__(import_name)
+                ver = getattr(mod, "__version__", "installed")
+            except ImportError:
+                ver = "NOT_INSTALLED"
+        versions[dist_name] = str(ver)
 
     return versions
 
 
 def build_or_load_body_mesh():
-    """Generates a 3D body mesh using clad_body / anny / trimesh."""
+    """Generates a 3D parametric human body mesh using trimesh / clad_body / anny."""
     import trimesh
-    from scipy.spatial import ConvexHull
 
-    # Check if clad_body or anny has a direct parametric generator
+    # Check if clad_body or anny has a direct mesh sampler
     mesh = None
     try:
         import clad_body
@@ -83,16 +92,15 @@ def build_or_load_body_mesh():
         except Exception:
             mesh = None
 
-    # Fallback to high-precision trimesh parametric lofted human torso mesh if direct API differs
+    # Fallback to high-precision trimesh parametric lofted human torso mesh
     if mesh is None or not isinstance(mesh, trimesh.Trimesh):
-        # Create a detailed anatomical 3D lofted human torso mesh (height ~ 1.75m)
         sections = []
-        heights = np.linspace(-0.85, 0.85, 80)  # 80 vertical slices
+        heights = np.linspace(-0.85, 0.85, 80)  # 80 vertical slices (~1.70m torso/legs)
         n_ring = 64
 
         for y in heights:
-            # Normalized height (-1.0 to 1.0)
-            yn = y / 0.85
+            yn = y / 0.85  # Normalized height (-1.0 to 1.0)
+
             # Anatomical width and depth profiles
             if yn < -0.3:  # Legs
                 w = 0.22 * (1.0 + (yn + 0.3) * 0.4)
@@ -111,7 +119,7 @@ def build_or_load_body_mesh():
                 d = 0.18 - 0.02 * ((yn - 0.70) / 0.15)
 
             theta = np.linspace(0, 2 * np.pi, n_ring, endpoint=False)
-            # Superellipse flank (p=2.45)
+            # Superellipse flank (exponent p=2.45)
             cos_t = np.cos(theta)
             sin_t = np.sin(theta)
             exp = 2.0 / 2.45
@@ -163,21 +171,21 @@ def compute_ground_truth_measurements(mesh) -> dict:
         lines = mesh.section(plane_origin=[0, y_plane, 0], plane_normal=[0, 1, 0])
 
         if lines is not None:
-            # Extract 2D (X, Z) cross-section coordinates in cm
-            slice_2d = lines.to_planar()[0]
-            pts_cm = slice_2d.vertices * 100.0  # Convert to cm
+            # Extract 2D vertices on cross-section plane in cm
+            # Use vertices directly on X, Z axes (since normal is Y)
+            pts_cm = lines.vertices[:, [0, 2]] * 100.0  # Convert to cm
 
             # 1. Raw anatomical contour perimeter
             diffs = np.diff(pts_cm, axis=0, append=pts_cm[:1])
             perimeter_raw = float(np.sum(np.sqrt(np.sum(diffs ** 2, axis=1))))
 
-            # 2. Convex Hull perimeter (taut physical tape ground truth)
+            # 2. Convex Hull perimeter (taut physical tape measure ground truth)
             hull = ConvexHull(pts_cm)
             hull_pts = pts_cm[hull.vertices]
             hull_diffs = np.diff(hull_pts, axis=0, append=hull_pts[:1])
             perimeter_hull = float(np.sum(np.sqrt(np.sum(hull_diffs ** 2, axis=1))))
 
-            # Width and Depth
+            # Coronal Width and Sagittal Depth
             width_cm = float(np.max(pts_cm[:, 0]) - np.min(pts_cm[:, 0]))
             depth_cm = float(np.max(pts_cm[:, 1]) - np.min(pts_cm[:, 1]))
 
@@ -219,11 +227,11 @@ def render_4view_mesh(mesh, image_size=(480, 640)) -> np.ndarray:
         pts_2d = np.column_stack([px, py]).astype(np.int32)
 
         # Render projected silhouette
-        for face in mesh.faces[::2]:  # Subsampled wireframe/mesh fill for fast rendering
+        for face in mesh.faces[::2]:  # Subsampled fill for fast rendering
             tri = pts_2d[face]
             cv2.fillConvexPoly(canvas, tri, (50, 50, 55))
 
-        # Add angle label and ArUco marker
+        # Add angle label
         cv2.putText(canvas, f"View {angle} deg", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 120, 255), 2)
 
         # ArUco fiducial in subject plane

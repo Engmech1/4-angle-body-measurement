@@ -1,0 +1,23 @@
+{
+  "waist": {
+    "coronal_width_cm": 35.042,
+    "sagittal_depth_cm": 21.706,
+    "perimeter_raw_cm": 2974.611,
+    "perimeter_hull_cm": 94.998,
+    "y_plane_m": 0.15
+  },
+  "chest": {
+    "coronal_width_cm": 37.353,
+    "sagittal_depth_cm": 25.588,
+    "perimeter_raw_cm": 1663.168,
+    "perimeter_hull_cm": 103.311,
+    "y_plane_m": 0.35
+  },
+  "hips": {
+    "coronal_width_cm": 35.986,
+    "sagittal_depth_cm": 24.989,
+    "perimeter_raw_cm": 3132.462,
+    "perimeter_hull_cm": 100.037,
+    "y_plane_m": -0.05
+  }
+}
