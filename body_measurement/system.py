@@ -205,7 +205,7 @@ class BodyMeasurementSystem:
         prior = self.SITE_MORPHOLOGY_PRIORS.get(site, {"lordosis_ratio": 0.125, "superellipse_p": 2.45})
         d_mean = (d_90 + d_270) / 2.0
         lordosis_val = custom_lordosis_cm if custom_lordosis_cm is not None else (d_mean * prior["lordosis_ratio"])
-        p_val = custom_p if custom_p is not None else prior["superellipse_p"]
+        p_val = custom_p
 
         chosen_method = method or self.reconstructor.default_method
         recon_res = self.reconstructor.reconstruct_cross_section(
