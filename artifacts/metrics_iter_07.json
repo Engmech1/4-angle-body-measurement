@@ -1,6 +1,6 @@
 {
   "iteration": "07",
-  "timestamp": "2026-08-22T20:01:01Z",
+  "timestamp": "2026-08-22T20:01:37Z",
   "suites": {
     "Tier 1 (Analytic Math)": {
       "num_tests": 8,
@@ -10,7 +10,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.0549,
+      "runtime_seconds": 0.0586,
       "is_passed": true,
       "status_note": null,
       "details": {
@@ -27,7 +27,7 @@
       "p95_cm": 0.5108,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.9539,
+      "runtime_seconds": 0.9502,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -40,7 +40,7 @@
       "p95_cm": 0.5823,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.5894,
+      "runtime_seconds": 0.5885,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -53,7 +53,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.1932,
+      "runtime_seconds": 0.193,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -66,7 +66,7 @@
       "p95_cm": 0.1755,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.2,
-      "runtime_seconds": 2.9847,
+      "runtime_seconds": 2.854,
       "is_passed": true,
       "status_note": null,
       "details": {
@@ -158,7 +158,7 @@
       "p95_cm": 0.3954,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.0122,
+      "runtime_seconds": 0.0108,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -184,7 +184,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.1154,
+      "runtime_seconds": 0.1022,
       "is_passed": true,
       "status_note": null,
       "details": {}
@@ -197,7 +197,7 @@
       "p95_cm": 0.0,
       "silent_failure_rate": 0.0,
       "refusal_rate": 0.0,
-      "runtime_seconds": 0.0033,
+      "runtime_seconds": 0.0035,
       "is_passed": true,
       "status_note": null,
       "details": {
