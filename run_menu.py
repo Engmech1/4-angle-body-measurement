@@ -1,7 +1,7 @@
 """
 Exercise App - Interactive Master Menu & Application Launcher.
 
-Provides a clean, crash-proof interactive terminal menu (Thai & English)
+Provides a robust, clean interactive terminal menu (100% English)
 to launch all modules, dashboards, benchmarks, and tests.
 """
 
@@ -31,23 +31,23 @@ def run_script(script_name: str, args: list = None):
     try:
         subprocess.run(cmd, check=False)
     except Exception as e:
-        print(f"\n[ERROR] Failed to run {script_name}: {e}")
+        print(f"\n[ERROR] Failed to execute {script_name}: {e}")
     print("\n" + "-" * 75)
-    input("กดปุ่ม Enter เพื่อกลับสู่เมนูหลัก (Press Enter to return to menu)...")
+    input("Press Enter to return to the Main Menu...")
 
 
 def run_pytest():
     clear_screen()
     cmd = [sys.executable, "-m", "pytest", "-v"]
     print("=" * 75)
-    print(f"  RUNNING PYTEST TEST SUITE: {' '.join(cmd)}")
+    print(f"  RUNNING TEST SUITE: {' '.join(cmd)}")
     print("=" * 75 + "\n")
     try:
         subprocess.run(cmd, check=False)
     except Exception as e:
-        print(f"\n[ERROR] Test suite execution failed: {e}")
+        print(f"\n[ERROR] Test execution failed: {e}")
     print("\n" + "-" * 75)
-    input("กดปุ่ม Enter เพื่อกลับสู่เมนูหลัก (Press Enter to return to menu)...")
+    input("Press Enter to return to the Main Menu...")
 
 
 def show_readme():
@@ -56,14 +56,14 @@ def show_readme():
         try:
             with open("README.md", "r", encoding="utf-8") as f:
                 content = f.read()
-            print(content[:3000])  # Show preview
-            print("\n... [ดูเนื้อหาฉบับเต็มได้ที่ไฟล์ README.md] ...\n")
+            print(content[:3000])
+            print("\n... [View full documentation in README.md file] ...\n")
         except Exception as e:
             print(f"Could not open README.md: {e}")
     else:
         print("README.md not found.")
     print("-" * 75)
-    input("กดปุ่ม Enter เพื่อกลับสู่เมนูหลัก (Press Enter to return to menu)...")
+    input("Press Enter to return to the Main Menu...")
 
 
 def main():
@@ -75,28 +75,28 @@ def main():
         print("=" * 75)
         print(f"  Python Environment: {sys.executable}")
         print("=" * 75)
-        print("\n  กรุณาเลือกเมนูที่ต้องการรัน (Select an option):\n")
+        print("\n  Please select an option to launch:\n")
         print("   [1] Multi-View Calibration Dashboard (calibration_dashboard.py)")
-        print("       - หน้าจอวิเคราะห์ 4 ช่อง Real-time (ArUco, Skeleton, Oscilloscope, Cross-Section)")
-        print("       - รองรับกล้องคอมพิวเตอร์ และกล้องมือถือ (DroidCam / IP Webcam)\n")
+        print("       - 4-Quadrant Real-Time Diagnostic View (ArUco, Skeleton, DoG, Spline)")
+        print("       - Supports PC Webcam & Smartphone IP Cameras (DroidCam / IP Webcam)\n")
         print("   [2] Live Computer Webcam Capture + ML Engine (live_camera_capture.py)")
-        print("       - ถ่ายวัดสรีระ 4 มุมอัตโนมัติ พร้อมระบบ Online ML Active Learning\n")
+        print("       - Guided 4-Angle Body Measurement with Online ML Active Learning\n")
         print("   [3] Interactive Guided Capture Demo (demo_capture.py)")
-        print("       - จำลองขั้นตอนการวัดสรีระ 4 มุม (0, 90, 180, 270 องศา) ในหน่วยความจำ\n")
+        print("       - In-Memory 4-Angle Guided Capture Simulation (0, 90, 180, 270 deg)\n")
         print("   [4] Adversarial QA Benchmark (run_simulation.py)")
-        print("       - ทดสอบความแม่นยำ Error < 0.5 cm บน 6 สรีระมนุษย์ พร้อม Sway และ Noise\n")
+        print("       - 6 Diverse Human Somatotypes Error Benchmark (< 0.5 cm Target)\n")
         print("   [5] Generate Visual Diagnostic Report & Plots (visualize_pipeline.py)")
-        print("       - สร้างรูปภาพกราฟวิเคราะห์ 4 มิติ (body_measurement_visual_report.png)\n")
+        print("       - Generates 4-Panel Analysis Figure (body_measurement_visual_report.png)\n")
         print("   [6] Train / Retrain ML Continual Learning Model (train_ml_model.py)")
-        print("       - ฝึกโมเดล ML เรียนรู้ข้อผิดพลาดทางสรีระและชดเชยมิติอัตโนมัติ\n")
-        print("   [7] Run Pytest Unit & Integration Tests (pytest -v)")
-        print("       - ตรวจสอบความถูกต้องของทุกโมดูล (Sub-Pixel, Scaling, MAD, Spline, ML, SMPL)\n")
+        print("       - Fits Non-Elliptical Morphology & Residual Bias Optimizer\n")
+        print("   [7] Run Pytest Unit & Integration Test Suite (pytest -v)")
+        print("       - Comprehensive Verification across all Modules (Sub-Pixel, MAD, ML, SMPL)\n")
         print("   [8] View README.md Documentation\n")
-        print("   [0] Exit (ออกจากโปรแกรม)\n")
+        print("   [0] Exit Application\n")
         print("=" * 75)
 
         try:
-            choice = input("ป้อนหมายเลขเมนู (0-8): ").strip()
+            choice = input("Enter choice (0-8): ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting...")
             break
@@ -119,11 +119,11 @@ def main():
             show_readme()
         elif choice == "0":
             clear_screen()
-            print("\nขอบคุณที่ใช้งาน Exercise App Body Measurement Engine!\n")
-            time.sleep(1.0)
+            print("\nThank you for using the Exercise App Body Measurement Engine!\n")
+            time.sleep(0.8)
             break
         else:
-            print("\n[ERROR] หมายเลขเมนูไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง...")
+            print("\n[ERROR] Invalid choice. Please enter a number between 0 and 8.")
             time.sleep(1.2)
 
 
